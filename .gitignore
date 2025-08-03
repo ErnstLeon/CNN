@@ -1,0 +1,17 @@
+*
+!.gitignore
+
+!include/
+!include/utility/
+!include/network/
+!include/network/utility/
+
+!include/network/utility/compile_range.hpp
+!include/network/utility/network_types.hpp
+!include/network/network.hpp
+
+!include/utility/image_processing.hpp
+!include/utility/tiny_imagenet_loader.hpp
+!include/utility/utility.hpp
+
+!main.cpp
