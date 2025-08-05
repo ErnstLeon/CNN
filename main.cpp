@@ -22,14 +22,6 @@ int main(int argc, char ** argv){
   CNN::Neural_Layer<64, 64, T> neural_layer_1;
   CNN::Neural_Layer<64, 200, T> neural_layer_2;
 
-  CNN::Convolution_FeatureMap<CHANNELS, IMG_HEIGHT, IMG_WIDTH, T> test = 
-                      CNN::Utility::img_vec_convert<CHANNELS, IMG_HEIGHT, IMG_WIDTH, T>("/Users/leon/Documents/Projekte/CNN/data/tiny-imagenet-200/test/images/test_162.JPEG");
-  auto test_ = test;
-  con_layer_1.apply(test_, test);
-
-  //CNN::Utility::print_ascii(test_);
-  //CNN::Utility::print_ascii(test);
-
-  auto network = CNN::Network::network<1, 2>(con_layer_1, neural_layer_1, neural_layer_2);
+  auto network = CNN::Network::network<CHANNELS, IMG_HEIGHT, IMG_WIDTH, 1, 2>(con_layer_1, neural_layer_1, neural_layer_2);
 
 }

@@ -1,9 +1,11 @@
 #ifndef CORE_HPP
 #define CORE_HPP
 
-#include "core/compile_range.hpp"
-#include "core/concepts.hpp"
+#include "core/helper/compile_range.hpp"
+#include "core/helper/concepts.hpp"
+#include "core/helper/loop_unroll.hpp"
+#include "core/helper/slice_tuple.hpp"
+
 #include "core/types.hpp"
-#include "core/slice_tuple.hpp"
 
 #endif // CORE_HPP

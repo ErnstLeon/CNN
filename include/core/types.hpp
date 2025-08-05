@@ -4,6 +4,8 @@
 #include <vector>
 #include <random>
 
+#include "helper/loop_unroll.hpp"
+
 namespace CNN{
 
     template<size_t C, size_t H, size_t W, typename T = float>
@@ -65,7 +67,7 @@ namespace CNN{
 
         using type = T;
 
-        const A_FUNC activation_func;
+        const A_FUNC activation_func{};
 
         static constexpr size_t stride = S;
         static constexpr size_t kernel_size = K;
@@ -118,17 +120,17 @@ namespace CNN{
             constexpr size_t kernel_height_shift = K / 2;
             constexpr size_t kernel_width_shift = K / 2;
 
-            #pragma unroll
+            UNROLL_PRAGMA
             for (size_t output_channel = 0; output_channel < COUT; ++output_channel) {
-                #pragma unroll
+                UNROLL_PRAGMA
                 for (size_t ph = 0; ph < pool_height; ++ph) {
-                    #pragma unroll
+                    UNROLL_PRAGMA
                     for (size_t pw = 0; pw < pool_width; ++pw) {
 
                         T max_val = std::numeric_limits<T>::lowest();
-                        #pragma unroll
+                        UNROLL_PRAGMA
                         for (size_t inner_ph = 0; inner_ph < P; ++inner_ph) {
-                            #pragma unroll
+                            UNROLL_PRAGMA
                             for (size_t inner_pw = 0; inner_pw < P; ++inner_pw) {
 
                                 const size_t ch = ph * P + inner_ph;
@@ -143,15 +145,15 @@ namespace CNN{
                                 const size_t input_base_h = ch * S;
                                 const size_t input_base_w = cw * S;
 
-                                #pragma unroll
+                                UNROLL_PRAGMA
                                 for (size_t input_channel = 0; input_channel < CIN; ++input_channel) {
 
                                     const size_t input_base = input_channel * INPUT_FeatureMap::height * 
                                                             INPUT_FeatureMap::width;
 
-                                    #pragma unroll
+                                    UNROLL_PRAGMA
                                     for (size_t kernel_h = 0; kernel_h < K; ++kernel_h) {
-                                        #pragma unroll
+                                        UNROLL_PRAGMA
                                         for (size_t kernel_w = 0; kernel_w < K; ++kernel_w) {
 
                                             const size_t kernel_idx =
@@ -163,8 +165,8 @@ namespace CNN{
                                             int iw = static_cast<int>(input_base_w + kernel_w) - 
                                                     static_cast<int>(kernel_width_shift);
 
-                                            if (ih < 0 || iw < 0 || ih >= INPUT_FeatureMap::height 
-                                                || iw >= INPUT_FeatureMap::width) continue;
+                                            if (ih < 0 || iw < 0 || ih >= static_cast<int>(INPUT_FeatureMap::height) 
+                                                || iw >= static_cast<int>(INPUT_FeatureMap::width)) continue;
 
                                             const size_t input_idx =
                                                 input_base + ih * INPUT_FeatureMap::width +
@@ -268,13 +270,13 @@ namespace CNN{
         requires (INPUT_FeatureMap::size == INPUT_NEURONS && OUTPUT_FeatureMap::size == OUTPUT_NEURONS)
         void apply(const INPUT_FeatureMap & input, OUTPUT_FeatureMap & output)
         {
-            #pragma unroll
+            UNROLL_PRAGMA
             for (size_t output_neuron = 0; output_neuron < output_neurons; ++output_neuron) {
 
                 size_t weights_base = output_neuron * input_neurons;
                 T sum = 0;
 
-                #pragma unroll
+                UNROLL_PRAGMA
                 for (size_t input_neuron = 0; input_neuron < input_neurons; ++input_neuron) {
                     sum += weights[weights_base + input_neuron] * input[input_neuron];
                 }

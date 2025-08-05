@@ -35,12 +35,15 @@ namespace CNN::Network{
         
     };
 
-    template<size_t NUM_CONV_LAYERS, size_t NUM_NEURAL_LAYERS, typename... Layer_Args>
+    template<size_t CHANNELS, size_t IMG_HEIGHT, size_t IMG_WIDTH,
+    size_t NUM_CONV_LAYERS, size_t NUM_NEURAL_LAYERS, typename... Layer_Args>
     auto network(Layer_Args&&... args){
         std::tuple<Layer_Args...> laysers{std::forward<Layer_Args>(args)...};
 
         auto conv_layers = slice_tuple<0, NUM_CONV_LAYERS - 1>(std::move(laysers));
         auto neural_layers = slice_tuple<NUM_CONV_LAYERS, NUM_CONV_LAYERS + NUM_NEURAL_LAYERS - 1>(std::move(laysers));
+
+        auto conv_featureMaps = featureMaps_from_layer(conv_layers);
 
         return Network<decltype(conv_layers), decltype(neural_layers)>{ 
             std::move(conv_layers), std::move(neural_layers) 
