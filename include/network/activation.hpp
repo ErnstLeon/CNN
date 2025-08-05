@@ -7,9 +7,9 @@
 
 namespace CNN
 {
+    
 template<typename T>
-class ReLU
-{
+class ReLU{
 public:
     
     using type = T;
@@ -38,8 +38,7 @@ public:
 };
 
 template<typename T>
-class Sigmoid
-{
+class Sigmoid{
 public:
     using type = T;
 
@@ -76,8 +75,8 @@ inline std::vector<T> softmax(std::vector<T>& input)
 }
 
 template<typename T>
-inline void softmax_inplace(std::vector<T>& input) {
-    
+inline void softmax_inplace(std::vector<T>& input) 
+{
     T max_val = *std::max_element(input.begin(), input.end());
 
     T sum = 0.0;

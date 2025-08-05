@@ -6,6 +6,7 @@
 #include "core/helper/loop_unroll.hpp"
 #include "core/helper/slice_tuple.hpp"
 
+#include "core/layer_shape.hpp"
 #include "core/types.hpp"
 
 #endif // CORE_HPP
