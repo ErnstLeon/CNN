@@ -6,8 +6,8 @@
 #include <random>
 #include <vector>
 
-#include "core/compile_range.hpp"
-#include "core/network_types.hpp"
+#include "../core.hpp"
+#include "activation.hpp"
 
 namespace CNN::Network{
 
