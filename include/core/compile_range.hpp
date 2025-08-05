@@ -1,8 +1,6 @@
 #ifndef COMPILE_RANGE_HPP
 #define COMPILE_RANGE_HPP
 
-#include <iostream>
-
 namespace CNN{
 
 template<size_t STOP, size_t START = 0, size_t STRIDE = 1, typename Func>

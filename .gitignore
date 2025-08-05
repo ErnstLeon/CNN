@@ -10,7 +10,8 @@
 !include/utility.hpp
 
 !include/core/compile_range.hpp
-!include/core/network_types.hpp
+!include/core/types.hpp
+!include/core/slice_tuple.hpp
 
 !include/network/network.hpp
 !include/network/activation.hpp

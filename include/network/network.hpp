@@ -11,31 +11,42 @@
 
 namespace CNN::Network{
 
-    template<typename T, size_t NUM_CONV_LAYERS, size_t NUM_NEURAL_LAYERS>
+    template<typename Conv_Tuple, typename Neural_Tuple>
     class Network {
     private:
+
+    Conv_Tuple conv_layers;
+    Neural_Tuple neural_layers;
+
+    static constexpr size_t num_conv_layers = std::tuple_size_v<Conv_Tuple>;
+    static constexpr size_t num_neural_layers = std::tuple_size_v<Neural_Tuple>;
     
     public:
+
+    Network(const Conv_Tuple& conv_layers, const Neural_Tuple& neural_layers) 
+    : conv_layers{conv_layers},
+    neural_layers{neural_layers} {};
+
+    Network(Conv_Tuple&& conv_layers, Neural_Tuple&& neural_layers) 
+    : conv_layers{std::move(conv_layers)},
+    neural_layers{std::move(neural_layers)} {};
+
+    
         
-      /*  template<typename... Layer_Args>
-        requires (sizeof...(Layer_Args) == NUM_CONV_LAYERS + NUM_NEURAL_LAYERS)
-        Network(Layer_Args&&... layers) {
-            
-            std::tuple<Layer_Args...> layers_{std::forward<Layer_Args>(layers)...};
-            
-            compile_range<NUM_CONV_LAYERS - 1>([&]<size_t I>(){
-               conv_layers[I] = std::move(std::get<I>(layers_));
-            });
-
-            compile_range<NUM_CONV_LAYERS + NUM_NEURAL_LAYERS - 1, NUM_CONV_LAYERS>([&]<size_t I>(){
-               neural_layers[I] = std::move(std::get<I>(layers_));
-            });
-            
-        }
-*/
-
-
     };
+
+    template<size_t NUM_CONV_LAYERS, size_t NUM_NEURAL_LAYERS, typename... Layer_Args>
+    auto network(Layer_Args&&... args){
+        std::tuple<Layer_Args...> laysers{std::forward<Layer_Args>(args)...};
+
+        auto conv_layers = slice_tuple<0, NUM_CONV_LAYERS - 1>(std::move(laysers));
+        auto neural_layers = slice_tuple<NUM_CONV_LAYERS, NUM_CONV_LAYERS + NUM_NEURAL_LAYERS - 1>(std::move(laysers));
+
+        return Network<decltype(conv_layers), decltype(neural_layers)>{ 
+            std::move(conv_layers), std::move(neural_layers) 
+        };
+
+    }
 
 }
 

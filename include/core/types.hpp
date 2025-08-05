@@ -118,12 +118,14 @@ namespace CNN{
             constexpr size_t kernel_height_shift = K / 2;
             constexpr size_t kernel_width_shift = K / 2;
 
+            #pragma unroll
             for (size_t output_channel = 0; output_channel < COUT; ++output_channel) {
+                #pragma unroll
                 for (size_t ph = 0; ph < pool_height; ++ph) {
+                    #pragma unroll
                     for (size_t pw = 0; pw < pool_width; ++pw) {
 
                         T max_val = std::numeric_limits<T>::lowest();
-
                         #pragma unroll
                         for (size_t inner_ph = 0; inner_ph < P; ++inner_ph) {
                             #pragma unroll

@@ -3,6 +3,7 @@
 
 #include "core/compile_range.hpp"
 #include "core/concepts.hpp"
-#include "core/network_types.hpp"
+#include "core/types.hpp"
+#include "core/slice_tuple.hpp"
 
 #endif // CORE_HPP

@@ -27,9 +27,9 @@ int main(int argc, char ** argv){
   auto test_ = test;
   con_layer_1.apply(test_, test);
 
-  CNN::Utility::print_ascii(test_);
-  CNN::Utility::print_ascii(test);
+  //CNN::Utility::print_ascii(test_);
+  //CNN::Utility::print_ascii(test);
 
-  // CNN::Network::Network<T, 1, 2>(con_layer_1, neural_layer_1, neural_layer_2);
+  auto network = CNN::Network::network<1, 2>(con_layer_1, neural_layer_1, neural_layer_2);
 
 }
