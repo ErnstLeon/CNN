@@ -1,8 +1,9 @@
 #ifndef NETWORK_TYPES_HPP
 #define NETWORK_TYPES_HPP
 
-#include <vector>
+#include <limits>
 #include <random>
+#include <vector>
 
 #include "helper/loop_unroll.hpp"
 
@@ -33,7 +34,7 @@ struct Convolution_FeatureMap{
         features = input_features;
     }
 
-    Convolution_FeatureMap(std::vector<T>&& input_features)
+    Convolution_FeatureMap(std::vector<T>&& input_features) noexcept 
     { 
         if (input_features.size() != channels * width * height) {
             throw std::runtime_error("Feature vector size does not match dimensions.");
@@ -78,9 +79,6 @@ struct Convolution_Layer{
 
     std::vector<T> kernels;
 
-    Convolution_Layer(T default_value) 
-    : kernels(output_channels * input_channels * kernel_size * kernel_size, default_value) {}
-
     Convolution_Layer() 
     : kernels(output_channels * input_channels * kernel_size * kernel_size) 
     {
@@ -91,6 +89,18 @@ struct Convolution_Layer{
         for (auto& val : kernels) val = dist(gen);
     }
 
+    Convolution_Layer(T default_value) 
+    : kernels(output_channels * input_channels * kernel_size * kernel_size, default_value) {}
+
+    Convolution_Layer(const Convolution_Layer & input){
+        kernels = input.kernels;
+    }
+
+    Convolution_Layer(Convolution_Layer && input) noexcept 
+    {
+        kernels = std::move(input.kernels);
+    }
+
     Convolution_Layer(const std::vector<T>& input_kernels)
     { 
         if (input_kernels.size() != output_channels * input_channels * kernel_size * kernel_size) {
@@ -99,7 +109,7 @@ struct Convolution_Layer{
         kernels = input_kernels;
     }
 
-    Convolution_Layer(std::vector<T>&& input_kernels)
+    Convolution_Layer(std::vector<T>&& input_kernels) noexcept 
     { 
         if (input_kernels.size() != output_channels * input_channels * kernel_size * kernel_size) {
             throw std::runtime_error("Kernel size does not match dimensions.");
@@ -107,11 +117,26 @@ struct Convolution_Layer{
         kernels = std::move(input_kernels);
     }
 
+    Convolution_Layer & operator= (const Convolution_Layer & input){
+        if(this != &input){
+             kernels = input.kernels;
+        }
+        return *this;
+    }
+
+    Convolution_Layer & operator= (Convolution_Layer && input) noexcept 
+    {
+        if(this != &input){
+            kernels = std::move(input.kernels);
+        }
+        return *this;
+    }
+
     template<typename INPUT_FeatureMap, typename OUTPUT_FeatureMap>
     requires (INPUT_FeatureMap::channels == CIN && OUTPUT_FeatureMap::channels == COUT &&
     (((INPUT_FeatureMap::height + S - 1) / S) + P - 1) / P == OUTPUT_FeatureMap::height &&
     (((INPUT_FeatureMap::width + S - 1) / S) + P - 1) / P == OUTPUT_FeatureMap::width)
-    void apply(const INPUT_FeatureMap & input, OUTPUT_FeatureMap & output)
+    void apply(const INPUT_FeatureMap & input, OUTPUT_FeatureMap & output) noexcept
     {
         constexpr size_t conv_height = (INPUT_FeatureMap::height + S - 1) / S;
         constexpr size_t conv_width = (INPUT_FeatureMap::width + S - 1) / S;
@@ -216,7 +241,7 @@ struct Neural_FeatureMap{
         features = input_features;
     };
 
-    Neural_FeatureMap(std::vector<T>&& input_features)
+    Neural_FeatureMap(std::vector<T>&& input_features) noexcept 
     { 
         if (input_features.size() != size) {
             throw std::runtime_error("Feature vector size does not match dimensions.");
@@ -259,7 +284,7 @@ struct Neural_Layer{
     {
         std::random_device rd;
         std::mt19937 gen(rd());
-        std::uniform_real_distribution<> dist(0.0, 1.0);
+        std::uniform_real_distribution<T> dist(0.0, 1.0);
 
         for (auto& val : weights) val = dist(gen);
     }
@@ -267,9 +292,48 @@ struct Neural_Layer{
     Neural_Layer(T default_value) 
     : weights(input_neurons * output_neurons, default_value) {}
 
+    Neural_Layer(const Neural_Layer & input){
+        weights = input.weights;
+    } 
+
+    Neural_Layer(Neural_Layer && input){
+        weights = std::move(input.weights);
+    } 
+
+    Neural_Layer(const std::vector<T>& input)
+    { 
+        if (input.size() != input_neurons * output_neurons) {
+            throw std::runtime_error("Weights size does not match dimensions.");
+        }
+        weights = input;
+    }
+
+    Neural_Layer(std::vector<T>&& input) noexcept 
+    { 
+        if (input.size() != input_neurons * output_neurons) {
+            throw std::runtime_error("Weights size does not match dimensions.");
+        }
+        weights = std::move(input);
+    }
+
+    Neural_Layer & operator=(const Neural_Layer & input){
+        if(this != &input){
+            weights = input.weights;
+        }
+        return *this;
+    }
+
+    Neural_Layer & operator=(Neural_Layer && input) noexcept
+    {
+        if(this != &input){
+            weights = std::move(input.weights);
+        }
+        return *this;
+    }
+
     template<typename INPUT_FeatureMap, typename OUTPUT_FeatureMap>
     requires (INPUT_FeatureMap::size == INPUT_NEURONS && OUTPUT_FeatureMap::size == OUTPUT_NEURONS)
-    void apply(const INPUT_FeatureMap & input, OUTPUT_FeatureMap & output)
+    void apply(const INPUT_FeatureMap & input, OUTPUT_FeatureMap & output) noexcept
     {
         UNROLL_PRAGMA
         for (size_t output_neuron = 0; output_neuron < output_neurons; ++output_neuron) {
@@ -279,9 +343,9 @@ struct Neural_Layer{
 
             UNROLL_PRAGMA
             for (size_t input_neuron = 0; input_neuron < input_neurons; ++input_neuron) {
-                sum += weights[weights_base + input_neuron] * input[input_neuron];
+                sum += weights[weights_base + input_neuron] * input.features[input_neuron];
             }
-            output[output_neuron] = sum;
+            output.features[output_neuron] = sum;
         }
     }
 };
