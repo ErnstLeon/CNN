@@ -56,11 +56,27 @@ inline constexpr auto featureMaps_from_layer_helper(const Layer_Tuple& layer_tup
                 widths[sizeof...(Ids) - 1 - Ids], heights[sizeof...(Ids) - 1 - Ids]>...>();
 }
 
+template<typename Layer_Tuple, size_t... Ids>
+inline constexpr auto featureMaps_from_layer_helper(const Layer_Tuple& layer_tuple, std::index_sequence<Ids...>) {
+
+    return std::tuple<Neural_FeatureMap<std::tuple_element_t<0, Layer_Tuple>::input_neurons>,
+            Neural_FeatureMap<std::tuple_element_t<Ids, Layer_Tuple>::output_neurons>...>();
+}
+
 template<size_t C, size_t H, size_t W, typename Layer_Tuple>
 inline constexpr auto featureMaps_from_layer(const Layer_Tuple& layer_tuple) {
     constexpr size_t Num_featureMaps = std::tuple_size_v<Layer_Tuple>;
     return featureMaps_from_layer_helper<C, H, W>(layer_tuple, std::make_index_sequence<Num_featureMaps>{});
 }
+
+template<typename Layer_Tuple>
+inline constexpr auto featureMaps_from_layer(const Layer_Tuple& layer_tuple) {
+    constexpr size_t Num_featureMaps = std::tuple_size_v<Layer_Tuple>;
+    return featureMaps_from_layer_helper(layer_tuple, std::make_index_sequence<Num_featureMaps>{});
+}
+
+template<typename FeatureMap>
+constexpr size_t flat_size = FeatureMap::channels * FeatureMap::height * FeatureMap::width;
 
 }
 
