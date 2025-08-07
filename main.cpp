@@ -20,8 +20,8 @@ int main(int argc, char ** argv){
 
   CNN::Convolution_Layer<3, 3, 3, 2, 2, CNN::ReLU<T>> con_layer_1;
   CNN::Convolution_Layer<3, 9, 3, 2, 2, CNN::ReLU<T>> con_layer_2;
-  CNN::Neural_Layer<64, 64, T> neural_layer_1;
-  CNN::Neural_Layer<64, 200, T> neural_layer_2;
+  CNN::Neural_Layer<64, 64, CNN::ReLU<T>> neural_layer_1;
+  CNN::Neural_Layer<64, 200, CNN::ReLU<T>> neural_layer_2;
 
   auto network = CNN::Network::network<CHANNELS, IMG_HEIGHT, IMG_WIDTH, 2, 2>(con_layer_1, con_layer_2, neural_layer_1, neural_layer_2);
 

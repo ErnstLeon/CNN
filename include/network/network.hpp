@@ -7,13 +7,14 @@
 #include <vector>
 
 #include "../core.hpp"
-#include "activation.hpp"
 
 namespace CNN::Network
 {
 
 template<typename Conv_Layer_Tuple, typename Neural_Layer_Tuple, 
-typename Conv_Feature_Tuple, typename Neural_Feature_Tuple>
+    typename Conv_Feature_Tuple, typename Neural_Feature_Tuple>
+requires (std::tuple_size_v<Conv_Layer_Tuple> == std::tuple_size_v<Conv_Feature_Tuple> - 1 
+    && std::tuple_size_v<Neural_Layer_Tuple> == std::tuple_size_v<Neural_Feature_Tuple> - 1)
 class Network {
 private:
 
@@ -40,7 +41,11 @@ public:
     : conv_layers{std::move(conv_layers)},
     neural_layers{std::move(neural_layers)},
     conv_features{std::move(conv_features)},
-    neural_features{std::move(neural_features)} {};
+    neural_features{std::move(neural_features)} {
+        compile_range<0>([&]<size_t I>(){
+            (std::get<I>(this -> conv_layers)).apply(std::get<I>(this -> conv_features), std::get<I + 1>(this -> conv_features));
+        });
+    };
 
 };
 
@@ -64,7 +69,7 @@ inline auto network(Layer_Args&&... args){
     {
         auto extended_neural_layers = add_tuple_begin(
             std::move(neural_layers), Neural_Layer<flat_size<LastConvFeatureMap>, 
-            FirstNeuralLayer::input_neurons, typename FirstNeuralLayer::type>{});
+            FirstNeuralLayer::input_neurons, decltype(FirstNeuralLayer::activation_func)>{});
             
         auto extended_neural_featureMaps = featureMaps_from_layer(extended_neural_layers);
 

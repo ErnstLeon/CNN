@@ -7,7 +7,11 @@
 #include "core/helper/add_tuple.hpp"
 #include "core/helper/split_tuple.hpp"
 
-#include "core/features_shape.hpp"
-#include "core/types.hpp"
+#include "core/learning/activation.hpp"
+#include "core/learning/loss.hpp"
+#include "core/learning/optimization.hpp"
+
+#include "core/types/types_shape.hpp"
+#include "core/types/types.hpp"
 
 #endif // CORE_HPP
