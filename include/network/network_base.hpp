@@ -1,5 +1,5 @@
-#ifndef NETWORK_HPP
-#define NETWORK_HPP
+#ifndef NETWORK_BASE_HPP
+#define NETWORK_BASE_HPP
 
 #include <algorithm>
 #include <array>
@@ -16,7 +16,7 @@ template<typename Conv_Layer_Tuple, typename Neural_Layer_Tuple,
 requires (std::tuple_size_v<Conv_Layer_Tuple> == std::tuple_size_v<Conv_Feature_Tuple> - 1 
     && std::tuple_size_v<Neural_Layer_Tuple> == std::tuple_size_v<Neural_Feature_Tuple> - 1)
 class Network {
-private:
+public:
 
     Conv_Layer_Tuple conv_layers;
     Neural_Layer_Tuple neural_layers;
@@ -26,8 +26,6 @@ private:
 
     static constexpr size_t num_conv_layers = std::tuple_size_v<Conv_Layer_Tuple>;
     static constexpr size_t num_neural_layers = std::tuple_size_v<Neural_Layer_Tuple>;
-
-public:
 
     Network(const Conv_Layer_Tuple& conv_layers, const Neural_Layer_Tuple& neural_layers,
         const Conv_Feature_Tuple& conv_features, const Neural_Feature_Tuple& neural_features) 
@@ -41,13 +39,23 @@ public:
     : conv_layers{std::move(conv_layers)},
     neural_layers{std::move(neural_layers)},
     conv_features{std::move(conv_features)},
-    neural_features{std::move(neural_features)} {
-        compile_range<0>([&]<size_t I>(){
-            (std::get<I>(this -> conv_layers)).apply(std::get<I>(this -> conv_features), std::get<I + 1>(this -> conv_features));
-        });
-    };
+    neural_features{std::move(neural_features)} {};
 
+private: 
+
+    void foward_propagation();
 };
+
+template<typename Conv_Layer_Tuple, typename Neural_Layer_Tuple, 
+    typename Conv_Feature_Tuple, typename Neural_Feature_Tuple>
+requires (std::tuple_size_v<Conv_Layer_Tuple> == std::tuple_size_v<Conv_Feature_Tuple> - 1 
+    && std::tuple_size_v<Neural_Layer_Tuple> == std::tuple_size_v<Neural_Feature_Tuple> - 1)
+void Network<Conv_Layer_Tuple, Neural_Layer_Tuple, Conv_Feature_Tuple, Neural_Feature_Tuple>::foward_propagation()
+{
+    compile_range<0>([&]<size_t I>(){
+        (std::get<I>(conv_layers)).apply(std::get<I>(conv_features), std::get<I + 1>(conv_features));
+    });
+}
 
 template<size_t C, size_t H, size_t W,
 size_t NUM_CONV_LAYERS, size_t NUM_NEURAL_LAYERS, typename... Layer_Args>
@@ -93,4 +101,4 @@ inline auto network(Layer_Args&&... args){
 
 
 
-#endif // NETWORK_HPP
+#endif // NETWORK_BASE_HPP
