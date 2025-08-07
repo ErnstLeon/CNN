@@ -132,6 +132,10 @@ struct Convolution_Layer{
         return *this;
     }
 
+    T& operator[](size_t id){return kernels[id];}
+
+    const T& operator[](size_t id) const {return kernels[id];}
+
     template<typename INPUT_FeatureMap, typename OUTPUT_FeatureMap>
     requires (INPUT_FeatureMap::channels == CIN && OUTPUT_FeatureMap::channels == COUT &&
     (((INPUT_FeatureMap::height + S - 1) / S) + P - 1) / P == OUTPUT_FeatureMap::height &&
@@ -296,7 +300,7 @@ struct Neural_Layer{
         weights = input.weights;
     } 
 
-    Neural_Layer(Neural_Layer && input){
+    Neural_Layer(Neural_Layer && input) noexcept {
         weights = std::move(input.weights);
     } 
 
@@ -330,6 +334,10 @@ struct Neural_Layer{
         }
         return *this;
     }
+
+    T& operator[](size_t id){return weights[id];}
+
+    const T& operator[](size_t id) const {return weights[id];}
 
     template<typename INPUT_FeatureMap, typename OUTPUT_FeatureMap>
     requires (INPUT_FeatureMap::size == INPUT_NEURONS && OUTPUT_FeatureMap::size == OUTPUT_NEURONS)
