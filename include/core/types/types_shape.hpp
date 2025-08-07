@@ -69,12 +69,12 @@ inline consteval auto get_widths(){
 template<size_t C, size_t H, size_t W, typename Layer_Tuple, size_t... Ids>
 inline constexpr auto featureMaps_from_layer_helper(const Layer_Tuple& layer_tuple, std::index_sequence<Ids...>) {
 
-    constexpr auto widths = get_widths<Layer_Tuple, W>();
     constexpr auto heights = get_heights<Layer_Tuple, H>();
+    constexpr auto widths = get_widths<Layer_Tuple, W>();
 
     return std::tuple<Convolution_FeatureMap<C, H, W>, Convolution_FeatureMap<
                 std::tuple_element_t<Ids, Layer_Tuple>::output_channels, 
-                widths[sizeof...(Ids) - 1 - Ids], heights[sizeof...(Ids) - 1 - Ids]>...>();
+                heights[sizeof...(Ids) - 1 - Ids], widths[sizeof...(Ids) - 1 - Ids]>...>();
 }
 
 template<size_t C, size_t H, size_t W, typename Layer_Tuple>
