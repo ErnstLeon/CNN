@@ -34,7 +34,7 @@ struct Convolution_FeatureMap{
         features = input_features;
     }
 
-    Convolution_FeatureMap(std::vector<T>&& input_features) noexcept 
+    Convolution_FeatureMap(std::vector<T>&& input_features)
     { 
         if (input_features.size() != channels * width * height) {
             throw std::runtime_error("Feature vector size does not match dimensions.");
@@ -107,18 +107,18 @@ struct Convolution_Layer{
         if (input_kernels.size() != output_channels * input_channels * kernel_size * kernel_size
             || input_biases.size() != output_channels) 
         {
-            throw std::runtime_error("Kernel size does not match dimensions.");
+            throw std::runtime_error("Kernel or bias size does not match dimensions.");
         }
         kernels = input_kernels;
         biases = input_biases;
     }
 
-    Convolution_Layer(std::vector<T>&& input_kernels, std::vector<T>&& input_biases) noexcept 
+    Convolution_Layer(std::vector<T>&& input_kernels, std::vector<T>&& input_biases)
     { 
         if (input_kernels.size() != output_channels * input_channels * kernel_size * kernel_size
             || input_biases.size() != output_channels) 
         {
-            throw std::runtime_error("Kernel size does not match dimensions.");
+            throw std::runtime_error("Kernel or bias size does not match dimensions.");
         }
         kernels = std::move(input_kernels);
         biases = std::move(input_biases);
@@ -245,15 +245,15 @@ struct Neural_FeatureMap{
     Neural_FeatureMap(const std::vector<T>& input_features) 
     { 
         if (input_features.size() != size) {
-            throw std::runtime_error("Feature or bias vector size does not match dimensions.");
+            throw std::runtime_error("Feature vector size does not match dimensions.");
         }
         features = input_features;
     };
 
-    Neural_FeatureMap(std::vector<T>&& input_features) noexcept 
+    Neural_FeatureMap(std::vector<T>&& input_features)
     { 
         if (input_features.size() != size) {
-            throw std::runtime_error("Feature or bias vector size does not match dimensions.");
+            throw std::runtime_error("Feature vector size does not match dimensions.");
         }
         features = std::move(input_features);
     };
@@ -315,16 +315,16 @@ struct Neural_Layer{
     Neural_Layer(const std::vector<T>& input_weights, const std::vector<T>& input_biases)
     { 
         if (input_weights.size() != input_neurons * output_neurons || input_biases.size() != output_neurons) {
-            throw std::runtime_error("Weights size does not match dimensions.");
+            throw std::runtime_error("Weights or biases size does not match dimensions.");
         }
         weights = input_weights;
         biases = input_biases;
     }
 
-    Neural_Layer(std::vector<T>&& input_weights, std::vector<T>&& input_biases) noexcept 
+    Neural_Layer(std::vector<T>&& input_weights, std::vector<T>&& input_biases)
     { 
         if (input_weights.size() != input_neurons * output_neurons || input_biases.size() != output_neurons) {
-            throw std::runtime_error("Weights size does not match dimensions.");
+            throw std::runtime_error("Weights or biases size does not match dimensions.");
         }
         weights = std::move(input_weights);
         biases = std::move(input_biases);
