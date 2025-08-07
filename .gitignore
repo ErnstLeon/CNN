@@ -10,6 +10,7 @@
 !include/core/types
 
 !include/core.hpp
+!include/network.hpp
 !include/utility.hpp
 
 !include/core/helper/add_tuple.hpp
@@ -25,9 +26,15 @@
 !include/core/types/types_shape.hpp
 !include/core/types/types.hpp
 
-!include/network/network.hpp
+!include/network/network_base.hpp
 
 !include/utility/image_conversion.hpp
 !include/utility/tiny_data_loader.hpp
+
+!test/
+!test/meson.build
+!test/helper_test.cpp
+!test/learning_test.cpp
+!test/type_test.cpp
 
 !main.cpp
