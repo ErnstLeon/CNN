@@ -49,6 +49,38 @@ TEST(ConvolutionLayerTest, IdentApply) {
     }
 }
 
+TEST(ConvolutionLayerTest, OnesApply) {
+
+    constexpr size_t CIN = 1, COUT = 1, K = 3, S = 1, P = 1;
+    CNN::Convolution_Layer<CIN, COUT, K, S, P, CNN::ReLU<float>> layer(0);
+
+    for(auto & k: layer.kernels) k = 1;
+
+    CNN::Convolution_FeatureMap<CIN, 5, 5, float> input(2);
+    CNN::Convolution_FeatureMap<COUT, 5, 5, float> output;
+
+    layer.apply(input, output);
+
+    for(size_t i = 0; i < 5; ++i){
+        for(size_t j = 0; j < 5; ++j){
+            if (i == 0 || i == 4){
+                if(j == 0 || j == 4){
+                    EXPECT_FLOAT_EQ(output.features[i * 5 + j], 8);
+                }
+                else{
+                    EXPECT_FLOAT_EQ(output.features[i * 5 + j], 12);
+                }
+            }
+            else if (j == 0 || j == 4){
+                EXPECT_FLOAT_EQ(output.features[i * 5 + j], 12);
+            }
+            else{
+                EXPECT_FLOAT_EQ(output.features[i * 5 + j], 18);
+            }
+        }
+    } 
+}
+
 TEST(ConvolutionLayerTest, InputChannelAddition) {
 
     constexpr size_t CIN = 3, COUT = 1, K = 3, S = 1, P = 1;
