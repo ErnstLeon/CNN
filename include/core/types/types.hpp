@@ -155,75 +155,76 @@ struct Convolution_Layer{
         constexpr size_t kernel_height_shift = K / 2;
         constexpr size_t kernel_width_shift = K / 2;
 
-        UNROLL_PRAGMA
-        for (size_t output_channel = 0; output_channel < COUT; ++output_channel) {
-            UNROLL_PRAGMA
-            for (size_t ph = 0; ph < pool_height; ++ph) {
-                UNROLL_PRAGMA
-                for (size_t pw = 0; pw < pool_width; ++pw) {
+        compile_range<COUT>([&]<size_t output_channel>{
+            
+            compile_range<pool_height>([&]<size_t ph>{
 
+                compile_range<pool_width>([&]<size_t pw>{
+                    
                     T max_val = std::numeric_limits<T>::lowest();
-                    UNROLL_PRAGMA
-                    for (size_t inner_ph = 0; inner_ph < P; ++inner_ph) {
-                        UNROLL_PRAGMA
-                        for (size_t inner_pw = 0; inner_pw < P; ++inner_pw) {
+                    
+                    compile_range<P>([&]<size_t inner_ph>{
+                        
+                        compile_range<P>([&]<size_t inner_pw>{
 
-                            const size_t ch = ph * P + inner_ph;
-                            const size_t cw = pw * P + inner_pw;
+                            constexpr size_t ch = ph * P + inner_ph;
+                            constexpr size_t cw = pw * P + inner_pw;
 
-                            if (ch >= conv_height || cw >= conv_width)
-                                continue;
+                            if constexpr (ch < conv_height && cw < conv_width){
 
-                            T sum = 0;
+                                T sum = 0;
 
-                            const size_t kernel_base = output_channel * CIN * K * K;
-                            const size_t input_base_h = ch * S;
-                            const size_t input_base_w = cw * S;
+                                constexpr size_t kernel_base = output_channel * CIN * K * K;
+                                constexpr size_t input_base_h = ch * S;
+                                constexpr size_t input_base_w = cw * S;
 
-                            UNROLL_PRAGMA
-                            for (size_t input_channel = 0; input_channel < CIN; ++input_channel) {
+                                compile_range<CIN>([&]<size_t input_channel>{
 
-                                const size_t input_base = input_channel * INPUT_FeatureMap::height * 
-                                                        INPUT_FeatureMap::width;
+                                    constexpr size_t input_base = input_channel * 
+                                        INPUT_FeatureMap::height * 
+                                        INPUT_FeatureMap::width;
 
-                                UNROLL_PRAGMA
-                                for (size_t kernel_h = 0; kernel_h < K; ++kernel_h) {
-                                    UNROLL_PRAGMA
-                                    for (size_t kernel_w = 0; kernel_w < K; ++kernel_w) {
+                                    compile_range<K>([&]<size_t kernel_h>{
+                        
+                                        compile_range<K>([&]<size_t kernel_w>{
 
-                                        const size_t kernel_idx =
-                                            kernel_base + input_channel * K * K +
-                                            kernel_h * K + kernel_w;
+                                            constexpr size_t kernel_idx =
+                                                kernel_base + input_channel * K * K +
+                                                kernel_h * K + kernel_w;
 
-                                        int ih = static_cast<int>(input_base_h + kernel_h) - 
-                                                static_cast<int>(kernel_height_shift);
-                                        int iw = static_cast<int>(input_base_w + kernel_w) - 
-                                                static_cast<int>(kernel_width_shift);
+                                            constexpr int ih = static_cast<int>(input_base_h + kernel_h) - 
+                                                    static_cast<int>(kernel_height_shift);
+                                            constexpr int iw = static_cast<int>(input_base_w + kernel_w) - 
+                                                    static_cast<int>(kernel_width_shift);
 
-                                        if (ih < 0 || iw < 0 || ih >= static_cast<int>(INPUT_FeatureMap::height) 
-                                            || iw >= static_cast<int>(INPUT_FeatureMap::width)) continue;
+                                            if constexpr (ih >= 0 && iw >= 0 && ih < static_cast<int>(INPUT_FeatureMap::height) 
+                                                && iw < static_cast<int>(INPUT_FeatureMap::width))
+                                            {
+                                                constexpr size_t input_idx =
+                                                    input_base + ih * INPUT_FeatureMap::width +
+                                                    iw;
 
-                                        const size_t input_idx =
-                                            input_base + ih * INPUT_FeatureMap::width +
-                                            iw;
+                                                sum += input.features[input_idx] * kernels[kernel_idx];
+                                            }
+                                        });
+                                    });
+                                });
 
-                                        sum += input.features[input_idx] * kernels[kernel_idx];
-                                    }
-                                }
+                                max_val = std::max(max_val, activation_func(sum + biases[output_channel]));
+
                             }
-                            max_val = std::max(max_val, activation_func(sum + biases[output_channel]));
-                        }
-                    }
+                        });
+                    });
 
-                    const size_t output_idx =
+                    constexpr size_t output_idx =
                         output_channel * pool_height * pool_width +
                         ph * pool_width +
                         pw;
 
                     output.features[output_idx] = max_val;
-                }
-            }
-        }
+                });
+            });
+        });
     }
 };
 
@@ -351,18 +352,18 @@ struct Neural_Layer{
     requires (INPUT_FeatureMap::size == INPUT_NEURONS && OUTPUT_FeatureMap::size == OUTPUT_NEURONS)
     void apply(const INPUT_FeatureMap & input, OUTPUT_FeatureMap & output) noexcept
     {
-        UNROLL_PRAGMA
-        for (size_t output_neuron = 0; output_neuron < output_neurons; ++output_neuron) {
+        compile_range<output_neurons>([&]<size_t output_neuron>{
 
-            size_t weights_base = output_neuron * input_neurons;
+            constexpr size_t weights_base = output_neuron * input_neurons;
             T sum = 0;
 
-            UNROLL_PRAGMA
-            for (size_t input_neuron = 0; input_neuron < input_neurons; ++input_neuron) {
+            compile_range<input_neurons>([&]<size_t input_neuron>{
+
                 sum += weights[weights_base + input_neuron] * input.features[input_neuron];
-            }
+            });
+
             output.features[output_neuron] = activation_func(sum + biases[output_neuron]);
-        }
+        });
     }
 };
 
