@@ -9,8 +9,8 @@ requires (sizeof...(Ls) + sizeof...(Rs) == std::tuple_size_v<std::remove_referen
 inline constexpr auto split_tuple_helper(Tuple&& tuple, std::index_sequence<Ls...>, std::index_sequence<Rs...>) 
 {
     return std::make_tuple(
-        std::make_tuple(std::move(std::get<Ls>(tuple))...),
-        std::make_tuple(std::move(std::get<R_START + Rs>(tuple))...)
+        std::make_tuple(std::get<Ls>(std::forward<Tuple>(tuple))...),
+        std::make_tuple(std::get<R_START + Rs>(std::forward<Tuple>(tuple))...)
     );
 }
 
