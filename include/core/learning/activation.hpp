@@ -9,12 +9,13 @@ namespace CNN
 {
     
 template<typename T>
+requires (std::integral<T> || std::floating_point<T>)
 class ReLU{
 public:
     
     using type = T;
     
-    T operator()(T x) const
+    T operator()(T x) const noexcept
     {
         if(x > 0)
         {
@@ -25,7 +26,7 @@ public:
         }
     }
 
-    T derivative(T x) const
+    T derivative(T x) const noexcept
     {
         if(x > 0)
         {
@@ -38,16 +39,17 @@ public:
 };
 
 template<typename T>
+requires (std::floating_point<T>)
 class Sigmoid{
 public:
     using type = T;
 
-    T operator()(T x) const
+    T operator()(T x) const noexcept
     {
         return static_cast<T>(1) / (static_cast<T>(1) + std::exp(-x));
     }
 
-    T derivative(T x) const
+    T derivative(T x) const noexcept
     {
         T sx = (*this)(x);
         return sx * (static_cast<T>(1) - sx);
@@ -55,6 +57,7 @@ public:
 };
 
 template<typename T>
+requires (std::floating_point<T>)
 inline std::vector<T> softmax(std::vector<T>& input) 
 {    
     std::vector<T> output(input.size());
@@ -75,6 +78,7 @@ inline std::vector<T> softmax(std::vector<T>& input)
 }
 
 template<typename T>
+requires (std::floating_point<T>)
 inline void softmax_inplace(std::vector<T>& input) 
 {
     T max_val = *std::max_element(input.begin(), input.end());
