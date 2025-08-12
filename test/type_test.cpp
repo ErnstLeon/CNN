@@ -11,10 +11,12 @@ TEST(NeuralLayerTest, ApplyComputesCorrectly) {
     layer.biases = {1};
 
     CNN::Neural_FeatureMap<2, float> input(std::vector<float>{1, 2});
-    CNN::Neural_FeatureMap<1, float> output;
+    CNN::Neural_FeatureMap<1, float> output_conv;
+    CNN::Neural_FeatureMap<1, float> output_activ;
 
-    layer.apply(input, output);
-    EXPECT_FLOAT_EQ(output.features[0], 2*1 + 3*2 + 1);
+    layer.apply(input, output_conv, output_activ);
+
+    EXPECT_FLOAT_EQ(output_conv.features[0], 2*1 + 3*2 + 1);
 }
 
 TEST(ConvolutionLayerTest, ZeroApply) {
@@ -23,11 +25,12 @@ TEST(ConvolutionLayerTest, ZeroApply) {
     CNN::Convolution_Layer<CIN, COUT, K, S, P, CNN::ReLU<float>> layer(0);
 
     CNN::Convolution_FeatureMap<CIN, 5, 5, float> input(1);
-    CNN::Convolution_FeatureMap<COUT, 5, 5, float> output;
+    CNN::Convolution_FeatureMap<COUT, 5, 5, float> output_conv;
+    CNN::Convolution_FeatureMap<COUT, 5, 5, float> output_activ;
 
-    layer.apply(input, output);
+    layer.apply(input, output_conv, output_activ);
 
-    for (float val : output.features) {
+    for (float val : output_conv.features) {
         EXPECT_FLOAT_EQ(val, static_cast<float>(0));
     }
 }
@@ -40,12 +43,13 @@ TEST(ConvolutionLayerTest, IdentApply) {
     layer.kernels[K / 2 * K + K / 2] = 1;
 
     CNN::Convolution_FeatureMap<CIN, 5, 5, float> input(2);
-    CNN::Convolution_FeatureMap<COUT, 5, 5, float> output;
+    CNN::Convolution_FeatureMap<COUT, 5, 5, float> output_conv;
+    CNN::Convolution_FeatureMap<COUT, 5, 5, float> output_activ;
 
-    layer.apply(input, output);
+    layer.apply(input, output_conv, output_activ);
 
     for (size_t i = 0; i < 25; ++i) {
-        EXPECT_FLOAT_EQ(input.features[i], output.features[i]);
+        EXPECT_FLOAT_EQ(input.features[i], output_conv.features[i]);
     }
 }
 
@@ -57,24 +61,25 @@ TEST(ConvolutionLayerTest, PoolingApply) {
     layer.kernels[K / 2 * K + K / 2] = 1;
 
     CNN::Convolution_FeatureMap<CIN, 5, 5, float> input(2);
-    CNN::Convolution_FeatureMap<COUT, 3, 3, float> output;
+    CNN::Convolution_FeatureMap<COUT, 3, 3, float> output_conv;
+    CNN::Convolution_FeatureMap<COUT, 3, 3, float> output_activ;
 
-    layer.apply(input, output);
+    layer.apply(input, output_conv, output_activ);
 
     for (size_t i = 0; i < 2; ++i) {
-        EXPECT_FLOAT_EQ(static_cast<float>(2), output.features[i]);
+        EXPECT_FLOAT_EQ(static_cast<float>(2), output_conv.features[i]);
     }
-    EXPECT_FLOAT_EQ(static_cast<float>(1), output.features[2]);
+    EXPECT_FLOAT_EQ(static_cast<float>(1), output_conv.features[2]);
 
     for (size_t i = 3; i < 5; ++i) {
-        EXPECT_FLOAT_EQ(static_cast<float>(2), output.features[i]);
+        EXPECT_FLOAT_EQ(static_cast<float>(2), output_conv.features[i]);
     }
-    EXPECT_FLOAT_EQ(static_cast<float>(1), output.features[5]);
+    EXPECT_FLOAT_EQ(static_cast<float>(1), output_conv.features[5]);
 
     for (size_t i = 6; i < 8; ++i) {
-        EXPECT_FLOAT_EQ(static_cast<float>(1), output.features[i]);
+        EXPECT_FLOAT_EQ(static_cast<float>(1), output_conv.features[i]);
     }
-    EXPECT_FLOAT_EQ(static_cast<float>(0.5), output.features[8]);
+    EXPECT_FLOAT_EQ(static_cast<float>(0.5), output_conv.features[8]);
 }
 
 TEST(ConvolutionLayerTest, StridingApply) {
@@ -85,7 +90,8 @@ TEST(ConvolutionLayerTest, StridingApply) {
     layer.kernels[K / 2 * K + K / 2] = 1;
 
     CNN::Convolution_FeatureMap<CIN, 5, 5, float> input(0);
-    CNN::Convolution_FeatureMap<COUT, 2, 2, float> output;
+    CNN::Convolution_FeatureMap<COUT, 2, 2, float> output_conv;
+    CNN::Convolution_FeatureMap<COUT, 2, 2, float> output_activ;
 
     input.features[0] = static_cast<float>(2);
     input.features[3] = static_cast<float>(1);
@@ -93,12 +99,12 @@ TEST(ConvolutionLayerTest, StridingApply) {
     input.features[15] = static_cast<float>(2);
     input.features[18] = static_cast<float>(1);
 
-    layer.apply(input, output);
+    layer.apply(input, output_conv, output_activ);
 
-    EXPECT_FLOAT_EQ(static_cast<float>(2), output.features[0]);
-    EXPECT_FLOAT_EQ(static_cast<float>(1), output.features[1]);
-    EXPECT_FLOAT_EQ(static_cast<float>(2), output.features[2]);
-    EXPECT_FLOAT_EQ(static_cast<float>(1), output.features[3]);
+    EXPECT_FLOAT_EQ(static_cast<float>(2), output_conv.features[0]);
+    EXPECT_FLOAT_EQ(static_cast<float>(1), output_conv.features[1]);
+    EXPECT_FLOAT_EQ(static_cast<float>(2), output_conv.features[2]);
+    EXPECT_FLOAT_EQ(static_cast<float>(1), output_conv.features[3]);
 }
 
 TEST(ConvolutionLayerTest, OnesApply) {
@@ -109,25 +115,26 @@ TEST(ConvolutionLayerTest, OnesApply) {
     for(auto & k: layer.kernels) k = 1;
 
     CNN::Convolution_FeatureMap<CIN, 5, 5, float> input(2);
-    CNN::Convolution_FeatureMap<COUT, 5, 5, float> output;
+    CNN::Convolution_FeatureMap<COUT, 5, 5, float> output_conv;
+    CNN::Convolution_FeatureMap<COUT, 5, 5, float> output_activ;
 
-    layer.apply(input, output);
+    layer.apply(input, output_conv, output_activ);
 
     for(size_t i = 0; i < 5; ++i){
         for(size_t j = 0; j < 5; ++j){
             if (i == 0 || i == 4){
                 if(j == 0 || j == 4){
-                    EXPECT_FLOAT_EQ(output.features[i * 5 + j], 8);
+                    EXPECT_FLOAT_EQ(output_conv.features[i * 5 + j], 8);
                 }
                 else{
-                    EXPECT_FLOAT_EQ(output.features[i * 5 + j], 12);
+                    EXPECT_FLOAT_EQ(output_conv.features[i * 5 + j], 12);
                 }
             }
             else if (j == 0 || j == 4){
-                EXPECT_FLOAT_EQ(output.features[i * 5 + j], 12);
+                EXPECT_FLOAT_EQ(output_conv.features[i * 5 + j], 12);
             }
             else{
-                EXPECT_FLOAT_EQ(output.features[i * 5 + j], 18);
+                EXPECT_FLOAT_EQ(output_conv.features[i * 5 + j], 18);
             }
         }
     } 
@@ -144,12 +151,13 @@ TEST(ConvolutionLayerTest, InputChannelAddition) {
 
     CNN::Convolution_FeatureMap<3, 5, 5, float> input(1);
 
-    CNN::Convolution_FeatureMap<COUT, 5, 5, float> output;
+    CNN::Convolution_FeatureMap<COUT, 5, 5, float> output_conv;
+    CNN::Convolution_FeatureMap<COUT, 5, 5, float> output_activ;
 
-    layer.apply(input, output);
+    layer.apply(input, output_conv, output_activ);
 
     for (size_t i = 0; i < 25; ++i) {
-        EXPECT_FLOAT_EQ(output.features[i], static_cast<float>(3));
+        EXPECT_FLOAT_EQ(output_conv.features[i], static_cast<float>(3));
     }
 }
 
