@@ -17,6 +17,7 @@ struct Convolution_FeatureMap{
     static constexpr size_t channels = C;
     static constexpr size_t height = H;
     static constexpr size_t width = W;
+    static constexpr size_t size = C * H * W;
 
     std::vector<T> features;
 
@@ -60,6 +61,16 @@ struct Convolution_FeatureMap{
         }
         return *this;
     }
+
+    T operator[](size_t id) const
+    {
+        return features[id];
+    }
+
+    T & operator[](size_t id)
+    {
+        return features[id];
+    }
 };
 
 template<size_t CIN, size_t COUT, size_t K, 
@@ -78,23 +89,23 @@ struct Convolution_Layer{
     static constexpr size_t pooling_size = P;
 
     std::vector<T> kernels;
-    std::vector<T> biases;
+    Convolution_FeatureMap<COUT, 1, 1, T> biases;
 
     Convolution_Layer() 
     : kernels(output_channels * input_channels * kernel_size * kernel_size),
-    biases(output_channels)  
+    biases()  
     {
         std::random_device rd;
         std::mt19937 gen(rd());
         std::uniform_real_distribution<T> dist(0.0, 1.0);
 
         for (auto& val : kernels) val = dist(gen);
-        for (auto& val : biases) val = dist(gen);
+        for (auto& val : biases.features) val = dist(gen);
     }
 
     Convolution_Layer(T default_value) 
     : kernels(output_channels * input_channels * kernel_size * kernel_size, default_value),
-    biases(output_channels, default_value) {}
+    biases(default_value) {}
 
     Convolution_Layer(const Convolution_Layer & input)
     : kernels{input.kernels}, biases{input.biases} {}
@@ -143,9 +154,11 @@ struct Convolution_Layer{
 
     template<typename INPUT_FeatureMap, typename OUTPUT_FeatureMap>
     requires (INPUT_FeatureMap::channels == CIN && OUTPUT_FeatureMap::channels == COUT &&
-    (((INPUT_FeatureMap::height + S - 1) / S) + P - 1) / P == OUTPUT_FeatureMap::height &&
-    (((INPUT_FeatureMap::width + S - 1) / S) + P - 1) / P == OUTPUT_FeatureMap::width)
-    void apply(const INPUT_FeatureMap & input, OUTPUT_FeatureMap & output) noexcept
+            (((INPUT_FeatureMap::height + S - 1) / S) + P - 1) / P == OUTPUT_FeatureMap::height &&
+            (((INPUT_FeatureMap::width + S - 1) / S) + P - 1) / P == OUTPUT_FeatureMap::width)
+    void apply(const INPUT_FeatureMap & input, 
+        OUTPUT_FeatureMap & output_weighted_inputs,
+        OUTPUT_FeatureMap & output_activation_results) noexcept
     {
         constexpr size_t conv_height = (INPUT_FeatureMap::height + S - 1) / S;
         constexpr size_t conv_width  = (INPUT_FeatureMap::width  + S - 1) / S;
@@ -210,9 +223,12 @@ struct Convolution_Layer{
                     });
 
                     sum /= static_cast<T>(P * P);
+                    T tmp = sum + biases[oc];
                     
                     constexpr size_t output_idx = oh_base + ow;
-                    output.features[output_idx] = activation_func(sum + biases[oc]);
+
+                    output_weighted_inputs.features[output_idx] = tmp;
+                    output_activation_results.features[output_idx] = activation_func(tmp);
                 });
             });
         });
@@ -220,8 +236,8 @@ struct Convolution_Layer{
 
     template<typename INPUT_FeatureMap, typename OUTPUT_FeatureMap>
     requires (INPUT_FeatureMap::channels == COUT && OUTPUT_FeatureMap::channels == CIN &&
-    (((OUTPUT_FeatureMap::height + S - 1) / S) + P - 1) / P == INPUT_FeatureMap::height &&
-    (((OUTPUT_FeatureMap::width + S - 1) / S) + P - 1) / P == INPUT_FeatureMap::width)
+            (((OUTPUT_FeatureMap::height + S - 1) / S) + P - 1) / P == INPUT_FeatureMap::height &&
+            (((OUTPUT_FeatureMap::width + S - 1) / S) + P - 1) / P == INPUT_FeatureMap::width)
     void apply_backwards(const INPUT_FeatureMap & input, OUTPUT_FeatureMap & output) noexcept
     {
         constexpr size_t output_channels = OUTPUT_FeatureMap::channels;
@@ -338,6 +354,16 @@ struct Neural_FeatureMap{
         }
         return *this;
     }
+
+    T operator[](size_t id) const
+    {
+        return features[id];
+    }
+
+    T & operator[](size_t id)
+    {
+        return features[id];
+    }
 };
 
 template<size_t INPUT_NEURONS, size_t OUTPUT_NEURONS, typename A_FUNC, typename T = A_FUNC::type>
@@ -351,7 +377,7 @@ struct Neural_Layer{
     static constexpr size_t output_neurons = OUTPUT_NEURONS;
 
     std::vector<T> weights;
-    std::vector<T> biases;
+    Neural_FeatureMap<OUTPUT_NEURONS, T> biases;
 
     Neural_Layer() 
     : weights(input_neurons * output_neurons), biases(output_neurons)
@@ -361,12 +387,12 @@ struct Neural_Layer{
         std::uniform_real_distribution<T> dist(0.0, 1.0);
 
         for (auto& val : weights) val = dist(gen);
-        for (auto& val : biases) val = dist(gen);
+        for (auto& val : biases.features) val = dist(gen);
     }
 
     Neural_Layer(T default_value) 
     : weights(input_neurons * output_neurons, default_value),
-    biases(output_neurons, default_value) {}
+    biases(default_value) {}
 
     Neural_Layer(const Neural_Layer & input)
     :  weights{input.weights}, biases{input.biases} {} 
@@ -411,7 +437,9 @@ struct Neural_Layer{
 
     template<typename INPUT_FeatureMap, typename OUTPUT_FeatureMap>
     requires (INPUT_FeatureMap::size == INPUT_NEURONS && OUTPUT_FeatureMap::size == OUTPUT_NEURONS)
-    void apply(const INPUT_FeatureMap & input, OUTPUT_FeatureMap & output) noexcept
+    void apply(const INPUT_FeatureMap & input, 
+        OUTPUT_FeatureMap & output_weighted_inputs,
+        OUTPUT_FeatureMap & output_activation_results) noexcept
     {
         compile_range<output_neurons>([&]<size_t output_neuron>{
 
@@ -423,7 +451,9 @@ struct Neural_Layer{
                 sum += weights[weights_base + input_neuron] * input.features[input_neuron];
             });
 
-            output.features[output_neuron] = activation_func(sum + biases[output_neuron]);
+            T tmp = sum + biases[output_neuron];
+            output_weighted_inputs.features[output_neuron] = tmp;
+            output_activation_results.features[output_neuron] = activation_func(tmp);
         });
     }
 
@@ -431,8 +461,8 @@ struct Neural_Layer{
     requires (INPUT_FeatureMap::size == OUTPUT_NEURONS && OUTPUT_FeatureMap::size == INPUT_NEURONS)
     void apply_backwards(const INPUT_FeatureMap & input, OUTPUT_FeatureMap & output) noexcept
     {
-        constexpr size_t input_size = INPUT_FeatureMap::size;
-        constexpr size_t output_size = OUTPUT_FeatureMap::size;
+        constexpr size_t input_size = OUTPUT_NEURONS;
+        constexpr size_t output_size = INPUT_NEURONS;
 
         compile_range<output_size>([&]<size_t output_neuron>{
 
