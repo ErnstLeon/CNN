@@ -11,7 +11,7 @@
 #include "core/learning/loss.hpp"
 #include "core/learning/optimization.hpp"
 
-#include "core/types/types_shape.hpp"
+#include "core/types/shapes.hpp"
 #include "core/types/types.hpp"
 
 #endif // CORE_HPP
