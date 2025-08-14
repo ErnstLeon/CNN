@@ -57,43 +57,53 @@ public:
 };
 
 template<typename T>
-requires (std::floating_point<T>)
-inline std::vector<T> softmax(std::vector<T>& input) 
-{    
-    std::vector<T> output(input.size());
+class Softmax{
+public:
 
-    T max_val = *std::max_element(input.begin(), input.end());
+    using type = T;
 
-    T sum = 0.0;
-    for (size_t i = 0; i < input.size(); ++i) {
-        output[i] = std::exp(input[i] - max_val);
-        sum += output[i];
+    template<typename Tensor>
+    requires(std::is_same_v<typename Tensor::type, T>)
+    Tensor apply(const Tensor& input) 
+    {    
+        constexpr size_t size = Tensor::size;
+        Tensor output{};
+
+        T max_val = *std::max_element(input.begin(), input.end());
+
+        T sum = 0.0;
+        for (size_t i = 0; i < size; ++i) {
+            output[i] = std::exp(input[i] - max_val);
+            sum += output[i];
+        }
+
+        for (T& val : output) {
+            val /= sum;
+        }
+
+        return output;
     }
 
-    for (T& val : output) {
-        val /= sum;
+    template<typename Tensor>
+    requires(std::is_same_v<typename Tensor::type, T>)
+    void apply_inplace(Tensor& input) 
+    {
+        constexpr size_t size = Tensor::size;
+
+        T max_val = *std::max_element(input.begin(), input.end());
+
+        T sum = 0.0;
+        for (size_t i = 0; i < size; ++i) {
+            T tmp = input[i];
+            input[i] = std::exp(tmp - max_val);
+            sum += input[i];
+        }
+
+        for (T& val : input) {
+            val /= sum;
+        }
     }
-
-    return output;
-}
-
-template<typename T>
-requires (std::floating_point<T>)
-inline void softmax_inplace(std::vector<T>& input) 
-{
-    T max_val = *std::max_element(input.begin(), input.end());
-
-    T sum = 0.0;
-    for (size_t i = 0; i < input.size(); ++i) {
-        T tmp = input[i];
-        input[i] = std::exp(tmp - max_val);
-        sum += input[i];
-    }
-
-    for (T& val : input) {
-        val /= sum;
-    }
-}
+};
 
 }
 

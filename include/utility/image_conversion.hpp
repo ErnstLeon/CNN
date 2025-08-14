@@ -59,7 +59,25 @@ static void print_ascii(const std::vector<T>& vec, int rows, int cols, int chann
 }
 
 template<size_t C, size_t H, size_t W, typename T = float>
-static void print_ascii(const Convolution_FeatureMap<C, H, W, T>& input) {
+static void print_ascii(const HeapTensor3D<C, H, W, T>& input) {
+    const std::string levels = " .:-=+*#%@";
+
+    for (int r = 0; r < H; ++r) {
+        for (int c = 0; c < W; ++c) {
+            float r_val = input.features[0 * H * W + r * W + c];
+            float g_val = input.features[1 * H * W + r * W + c];
+            float b_val = input.features[2 * H * W + r * W + c];
+            float gray = (r_val + g_val + b_val) / static_cast<T>(3);
+
+            int idx = static_cast<int>(gray * (levels.size() - 1));
+            std::cout << levels[idx];
+        }
+        std::cout << '\n';
+    }
+}
+
+template<size_t C, size_t H, size_t W, typename T = float>
+static void print_ascii(const StackTensor3D<C, H, W, T>& input) {
     const std::string levels = " .:-=+*#%@";
 
     for (int r = 0; r < H; ++r) {

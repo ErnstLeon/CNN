@@ -7,40 +7,61 @@
 
 namespace CNN::Optimizer
 {
-template<typename T>
-class Gradient_Descent{
+
+template<typename Tensor>
+class Gradient_Descent_ {
 private:
-    T learning_rate = static_cast<T>(0.01);
+    using T = typename Tensor::type;
+    static constexpr size_t size = Tensor::size;
+
+    const T learning_rate = static_cast<T>(0.01);
 
 public:
-    Gradient_Descent() = default;
+    Gradient_Descent_() = default;
+    Gradient_Descent_(T learning_rate) : learning_rate(learning_rate) {}
 
-    Gradient_Descent(T learning_rate) 
-    : learning_rate{learning_rate} {};
-
-    void update(std::vector<T> & current, const std::vector<T> & gradient)
-    {
-        std::transform(current.begin(), current.end(), gradient.begin(), current.begin(),
-                    [&](T val, T grad) { return val - learning_rate * grad;});
+    void update(Tensor& current, const Tensor& gradient) {
+        for(size_t i = 0; i < size; ++i){
+            current[i] -= learning_rate * gradient[i];
+        }
     }
 };
 
 template<typename T>
-class Adam_Optimizer {
+class Gradient_Descent {
+public:
+    const T learning_rate = static_cast<T>(0.01);
+
+    Gradient_Descent() = default;
+    Gradient_Descent(T learning_rate) : learning_rate(learning_rate) {}
+
+    template<typename Tensor>
+    requires std::is_same_v<typename Tensor::type, T>
+    Gradient_Descent_<Tensor> Tensor_Optimizer() const {
+        return Gradient_Descent_<Tensor>(learning_rate);
+    }
+};
+
+template<typename Tensor>
+class Adam_Optimizer_ {
 private:
-    T learning_rate = static_cast<T>(0.001);
-    T beta1 = static_cast<T>(0.9);
-    T beta2 = static_cast<T>(0.999);
-    T epsilon = static_cast<T>(1e-8);
+    using T = Tensor::type;
+    static constexpr size_t size = Tensor::size;
+
+    const T learning_rate = static_cast<T>(0.001);
+    const T beta1 = static_cast<T>(0.9);
+    const T beta2 = static_cast<T>(0.999);
+    const T epsilon = static_cast<T>(1e-8);
+
     int timestep = 0;
 
-    std::vector<T> m;
-    std::vector<T> v;
+    Tensor m{};
+    Tensor v{};
 
 public:
-    Adam_Optimizer() = default;
+    Adam_Optimizer_() = default;
 
-    Adam_Optimizer(T learning_rate, 
+    Adam_Optimizer_(T learning_rate, 
                 T beta1 = static_cast<T>(0.9),   
                 T beta2 = static_cast<T>(0.999),
                 T epsilon = static_cast<T>(1e-8)) 
@@ -48,19 +69,15 @@ public:
     epsilon{epsilon } {}
 
 
-    void update(std::vector<T>& current, const std::vector<T>& gradient) 
+    void update(Tensor& current, const Tensor& gradient) 
     {
-        if (m.empty()) {
-            m.resize(current.size(), static_cast<T>(0));
-            v.resize(current.size(), static_cast<T>(0));
-        }
-
         ++timestep;
 
         T beta1_pow_t = std::pow(beta1, timestep);
         T beta2_pow_t = std::pow(beta2, timestep);
 
-        for (size_t i = 0; i < current.size(); ++i) {
+        UNROLL_PRAGMA
+        for (size_t i = 0; i < size; ++i) {
             T g = gradient[i];
 
             m[i] = beta1 * m[i] + (static_cast<T>(1) - beta1) * g;
@@ -74,11 +91,36 @@ public:
     }
 
     void reset() {
-        std::fill(m.begin(), m.end(), static_cast<T>(0));
-        std::fill(v.begin(), v.end(), static_cast<T>(0));
+        m.fill(static_cast<T>(0));
+        v.fill(static_cast<T>(0));
         timestep = 0;
     }
 };
+
+template<typename T>
+class Adam_Optimizer {
+public:
+    T learning_rate = static_cast<T>(0.001);
+    T beta1 = static_cast<T>(0.9);
+    T beta2 = static_cast<T>(0.999);
+    T epsilon = static_cast<T>(1e-8);
+
+    Adam_Optimizer() = default;
+
+    Adam_Optimizer(T learning_rate, 
+                T beta1 = static_cast<T>(0.9),   
+                T beta2 = static_cast<T>(0.999),
+                T epsilon = static_cast<T>(1e-8)) 
+    : learning_rate{learning_rate}, beta1{beta1}, beta2{beta2}, 
+    epsilon{epsilon } {}
+
+    template<typename Tensor>
+    requires std::is_same_v<typename Tensor::type, T>
+    Adam_Optimizer_<Tensor> Tensor_Optimizer() const {
+        return Adam_Optimizer_<Tensor>(learning_rate, beta1, beta2, epsilon);
+    }
+};
+
 }
 
 #endif // OPTIMIZATION_H

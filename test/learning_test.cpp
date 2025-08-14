@@ -66,11 +66,11 @@ TEST(LearningTest, SoftmaxInplaceFunctionTest) {
 }
 
 TEST(LearningTest, GDOptimizerConverges) {
-    
-    CNN::Optimizer::Gradient_Descent<double> optimizer{0.1};
 
-    std::vector<double> value(1);
-    std::vector<double> gradient(1);
+    CNN::HeapTensor1D<1, double> value(1);
+    CNN::HeapTensor1D<1, double> gradient(1);
+    
+    CNN::Optimizer::Gradient_Descent_<CNN::HeapTensor1D<1, double>> optimizer{0.1};
 
     // function (x - 3)^2, derivate: 2(x - 3)
     value[0] = static_cast<double>(0.0);
@@ -84,10 +84,10 @@ TEST(LearningTest, GDOptimizerConverges) {
 
 TEST(LearningTest, AdamOptimizerConverges) {
     
-    CNN::Optimizer::Adam_Optimizer<double> optimizer{0.1};
-
-    std::vector<double> value(1);
-    std::vector<double> gradient(1);
+    CNN::HeapTensor1D<1, double> value(1);
+    CNN::HeapTensor1D<1, double> gradient(1);
+    
+    CNN::Optimizer::Adam_Optimizer_<CNN::HeapTensor1D<1, double>> optimizer{0.1};
 
     // function (x - 3)^2, derivate: 2(x - 3)
     value[0] = static_cast<double>(0.0);

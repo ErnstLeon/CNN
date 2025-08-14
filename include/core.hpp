@@ -11,7 +11,9 @@
 #include "core/learning/loss.hpp"
 #include "core/learning/optimization.hpp"
 
-#include "core/types/shapes.hpp"
-#include "core/types/types.hpp"
+#include "core/types/heap_tensor.hpp"
+#include "core/types/layer_shapes.hpp"
+#include "core/types/layer_types.hpp"
+#include "core/types/stack_tensor.hpp"
 
 #endif // CORE_HPP

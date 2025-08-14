@@ -34,11 +34,15 @@ static std::unordered_map<std::string, int> load_tiny_imag_categories(const std:
     return category_map;
 }
 
-template<size_t C, size_t H, size_t W, typename T = float>
-static std::vector<std::pair<Convolution_FeatureMap<C, H, W, T>, std::vector<T>>> load_tiny_imag_train(
+template<size_t C, size_t H, size_t W, size_t Cat, typename T = float>
+static std::vector<std::pair<HeapTensor3D<C, H, W, T>, HeapTensor1D<Cat, T>>> load_tiny_imag_train(
     const std::string & dirname, const std::unordered_map<std::string, int> & category_map){
 
-    std::vector<std::pair<Convolution_FeatureMap<C, H, W, T>, std::vector<T>>> training_data{};
+    if(Cat != category_map.size()){
+        throw std::runtime_error("Category map is not of given size.");
+    }
+
+    std::vector<std::pair<HeapTensor3D<C, H, W, T>, HeapTensor1D<Cat, T>>> training_data{};
     const std::filesystem::path base_directory(dirname);
 
     for (const auto& subdir : std::filesystem::directory_iterator(base_directory)) {
@@ -54,9 +58,9 @@ static std::vector<std::pair<Convolution_FeatureMap<C, H, W, T>, std::vector<T>>
         for (const auto& image_file : std::filesystem::directory_iterator(subdir.path() / "images")){
             if (!image_file.is_regular_file()) continue;
 
-            Convolution_FeatureMap<C, H, W, T> imag_vec = 
+            HeapTensor3D<C, H, W, T> imag_vec = 
                         img_vec_convert<C, H, W, T>(image_file.path().string());
-            std::vector<T> category_vec(category_map.size(), static_cast<T>(0));
+            HeapTensor1D<Cat, T> category_vec(static_cast<T>(0));
 
             category_vec[category_citer -> second] = static_cast<T>(1);
 
@@ -66,9 +70,13 @@ static std::vector<std::pair<Convolution_FeatureMap<C, H, W, T>, std::vector<T>>
     return training_data;
 }
 
-template<size_t C, size_t H, size_t W, typename T = float>
-static std::vector<std::pair<Convolution_FeatureMap<C, H, W, T>, std::vector<T>>> load_tiny_imag_test(
+template<size_t C, size_t H, size_t W, size_t Cat, typename T = float>
+static std::vector<std::pair<HeapTensor3D<C, H, W, T>, HeapTensor1D<Cat, T>>> load_tiny_imag_test(
     const std::string & dirname, const std::unordered_map<std::string, int> & category_map){
+
+    if(Cat != category_map.size()){
+        throw std::runtime_error("Category map is not of given size.");
+    }
 
     std::ifstream annotations_file(dirname + "/val_annotations.txt");
     std::unordered_map<std::string, int> annotations;
@@ -90,15 +98,15 @@ static std::vector<std::pair<Convolution_FeatureMap<C, H, W, T>, std::vector<T>>
         annotations[image_name] = category_citer -> second;
     }
 
-    std::vector<std::pair<Convolution_FeatureMap<C, H, W, T>, std::vector<T>>> training_data{};
+    std::vector<std::pair<HeapTensor3D<C, H, W, T>, HeapTensor1D<Cat, T>>> training_data{};
     const std::filesystem::path base_directory(dirname + "/images");
 
     for (const auto& image_file : std::filesystem::directory_iterator(base_directory)){
         if (!image_file.is_regular_file()) continue;
 
-        Convolution_FeatureMap<C, H, W, T> imag_vec = 
+        HeapTensor3D<C, H, W, T> imag_vec = 
                     img_vec_convert<C, H, W, T>(image_file.path().string());
-        std::vector<T> category_vec(category_map.size(), static_cast<T>(0));
+        HeapTensor1D<Cat, T> category_vec(category_map.size(), static_cast<T>(0));
 
         category_vec[annotations[image_file.path().filename().string()]] = static_cast<T>(1);
 
