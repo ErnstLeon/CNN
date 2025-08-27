@@ -17,23 +17,23 @@ public:
     
     T operator()(T x) const noexcept
     {
-        if(x > 0)
+        if(x >= 0)
         {
             return x;
         }
         else{
-            return static_cast<T>(0);
+            return static_cast<T>(0.01 * x);
         }
     }
 
     T derivative(T x) const noexcept
     {
-        if(x > 0)
+        if(x >= 0)
         {
             return 1;
         }
         else{
-            return static_cast<T>(0);
+            return static_cast<T>(0.01);
         }
     }
 };

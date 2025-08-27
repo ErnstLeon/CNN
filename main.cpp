@@ -26,10 +26,9 @@ int main(int argc, char ** argv){
   CNN::Neural_Layer<64, 64, CNN::ReLU<T>> neural_layer_1;
   CNN::Neural_Layer<64, 200, CNN::Softmax<T>> neural_layer_2;
 
-  auto network = CNN::Network::network<CHANNELS, IMG_HEIGHT, IMG_WIDTH, 3, 2>(
-                  con_layer_1, con_layer_2, con_layer_3, 
-                  neural_layer_1, neural_layer_2);
+  auto network = CNN::Network::network<CHANNELS, IMG_HEIGHT, IMG_WIDTH, 1, 2>(
+                  con_layer_1, neural_layer_1, neural_layer_2);
 
-  CNN::Optimizer::Adam_Optimizer<T> opt;
+  CNN::Optimizer::Adam_Optimizer<T> opt(0.01);
   network.train(training_data, opt, 1000, 100); 
 }

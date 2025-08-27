@@ -41,9 +41,7 @@ struct Convolution_Layer{
         {
             constexpr size_t fan_in  = input_channels  * kernel_size * kernel_size;
 
-            std::mt19937 gen;
-            std::random_device rd;
-            gen.seed(rd());
+            std::mt19937 gen(100);
 
             const T r = std::sqrt(T(6) / T(fan_in));
             std::uniform_real_distribution<T> wdist(-r, r);
@@ -244,18 +242,18 @@ struct Neural_Layer{
     Neural_Layer(bool rnd = true) {
         if(rnd)
         {
-            std::mt19937 gen;
-            std::random_device rd;
-            gen.seed(rd());
-            std::uniform_real_distribution<T> dist(0.0, 1.0);
+            constexpr size_t fan_in  = input_neurons;
+
+            std::mt19937 gen(100);
+
+            const T r = std::sqrt(T(6) / T(fan_in));
+            std::uniform_real_distribution<T> wdist(-r, r);
 
             UNROLL_PRAGMA
             for (size_t i = 0; i < weights_size; ++i) 
-                weights[i] = dist(gen);
+                weights[i] = wdist(gen);
 
-            UNROLL_PRAGMA
-            for (size_t i = 0; i < biases_size; ++i) 
-                biases[i] = dist(gen);
+            biases.fill(T(0));
         }
     }
 
@@ -336,18 +334,18 @@ struct Neural_Layer<INPUT_NEURONS, OUTPUT_NEURONS, Softmax<T>, T>{
     Neural_Layer(bool rnd = true) {
         if(rnd)
         {
-            std::mt19937 gen;
-            std::random_device rd;
-            gen.seed(rd());
-            std::uniform_real_distribution<T> dist(0.0, 1.0);
+            constexpr size_t fan_in  = input_neurons;
+
+            std::mt19937 gen(100);
+
+            const T r = std::sqrt(T(6) / T(fan_in));
+            std::uniform_real_distribution<T> wdist(-r, r);
 
             UNROLL_PRAGMA
             for (size_t i = 0; i < weights_size; ++i) 
-                weights[i] = dist(gen);
+                weights[i] = wdist(gen);
 
-            UNROLL_PRAGMA
-            for (size_t i = 0; i < biases_size; ++i) 
-                biases[i] = dist(gen);
+            biases.fill(T(0));
         }
     }
 

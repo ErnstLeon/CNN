@@ -12,12 +12,54 @@ TEST(NeuralLayerTest, ApplyComputesCorrectly) {
     layer.biases[0] = 1;
 
     CNN::HeapTensor1D<2, float> input(std::vector<float>{1, 2});
-    CNN::HeapTensor1D<1, float> output_conv;
+    CNN::HeapTensor1D<1, float> output_neural;
     CNN::HeapTensor1D<1, float> output_activ;
 
-    layer.apply(input, output_conv, output_activ);
+    layer.apply(input, output_neural, output_activ);
 
-    EXPECT_FLOAT_EQ(output_conv[0], 2*1 + 3*2 + 1);
+    EXPECT_FLOAT_EQ(output_neural[0], 2*1 + 3*2 + 1);
+}
+
+TEST(NeuralLayerTest, ApplySoftmaxComputesCorrectly) {
+
+    CNN::Neural_Layer<2, 2, CNN::Softmax<float>> layer;
+
+    layer.weights[0] = 2;
+    layer.weights[1] = 3;
+    layer.weights[2] = 4;
+    layer.weights[3] = 5;
+    layer.biases[0] = 1;
+    layer.biases[1] = 2;
+
+    CNN::HeapTensor1D<2, float> input(std::vector<float>{1, 2});
+    CNN::HeapTensor1D<2, float> output_neural;
+    CNN::HeapTensor1D<2, float> output_activ;
+
+    layer.apply(input, output_neural, output_activ);
+
+    EXPECT_FLOAT_EQ(output_neural[0], 9);
+    EXPECT_FLOAT_EQ(output_neural[1], 16);
+
+    EXPECT_FLOAT_EQ(output_activ[0], exp(9) / (exp(9) + exp(16)));
+    EXPECT_FLOAT_EQ(output_activ[1], exp(16) / (exp(9) + exp(16)));
+}
+
+TEST(NeuralLayerTest, BackwardsApplyComputesCorrectly) {
+
+    CNN::Neural_Layer<2, 2, CNN::ReLU<float>> layer;
+
+    layer.weights[0] = 2;
+    layer.weights[1] = 3;
+    layer.weights[2] = 1;
+    layer.weights[3] = 0;
+
+    CNN::HeapTensor1D<2, float> input(std::vector<float>{1, 2});
+    CNN::HeapTensor1D<2, float> output_neural;
+
+    layer.apply_backwards(input, output_neural);
+
+    EXPECT_FLOAT_EQ(output_neural[0], 4);
+    EXPECT_FLOAT_EQ(output_neural[1], 3);
 }
 
 TEST(ConvolutionLayerTest, ZeroApply) {
@@ -162,6 +204,26 @@ TEST(ConvolutionLayerTest, InputChannelAddition) {
     }
 }
 
+TEST(ConvolutionLayerTest, ApplyLayer) {
+
+    CNN::Convolution_Layer<2, 1, 2, 2, 2, CNN::ReLU<float>> layer(false);
+
+    CNN::HeapTensor3D<2, 3, 3, float> input{};
+
+    for(size_t i = 0; i < 2 * 2 * 2; ++i) layer.kernels[i] = i + 1;
+
+    for(size_t i = 0; i < 2 * 3 * 3; ++i) input[i] = i + 1;
+
+    CNN::HeapTensor3D<1, 1, 1, float> output_conv;
+    CNN::HeapTensor3D<1, 1, 1, float> output_activ;
+
+    layer.apply(input, output_conv, output_activ);
+
+    EXPECT_FLOAT_EQ(output_conv[0], 254.25);
+    EXPECT_FLOAT_EQ(output_activ[0], 254.25);
+
+}
+
 TEST(NetworkTest, InputForwarding) {
 
     constexpr size_t K = 3;
@@ -176,7 +238,7 @@ TEST(NetworkTest, InputForwarding) {
     layer_2.biases[0] = 1;
 
     CNN::Neural_Layer<25, 25, CNN::ReLU<float>> layer_3(false);
-    for(size_t i= 0; i < 25; ++i) layer_3.weights[i * 25 + i] = 2;
+    for(size_t i = 0; i < 25; ++i) layer_3.weights[i * 25 + i] = 2;
 
     auto network = CNN::Network::network<3, 5, 5, 2, 1>(layer_1, layer_2, layer_3);
 

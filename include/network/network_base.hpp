@@ -187,7 +187,7 @@ void Network<
                     Neural_Feature_Tuple d;
 
                     foward_propagate(input, a,b,c,d);
-                    error += cross_entropy_loss(true_output, std::get<num_neural_layers>(d));
+                    error += cross_entropy_loss(std::get<num_neural_layers>(d), true_output);
                 }
 
                 #pragma omp critical
@@ -220,19 +220,33 @@ void Network<
                 std::get<I>(neural_deriv).biases *= inv_sample_size;
             });
 
+            std::cout << std::get<0>(conv_layers).kernels[0] << std::endl;
+            std::cout << std::get<0>(conv_deriv).kernels[0] << std::endl;
+
             compile_range<num_conv_layers>(
             [&]<size_t I>(){
                 std::get<I>(conv_kernels_optimizers).update(std::get<I>(conv_layers).kernels, std::get<I>(conv_deriv).kernels);
                 std::get<I>(conv_biases_optimizers).update(std::get<I>(conv_layers).biases, std::get<I>(conv_deriv).biases);
             });
 
+            std::cout << std::get<0>(conv_layers).kernels[0] << std::endl;
+
             compile_range<num_neural_layers>(
             [&]<size_t I>(){
                 std::get<I>(neural_weights_optimizers).update(std::get<I>(neural_layers).weights, std::get<I>(neural_deriv).weights);
                 std::get<I>(neural_biases_optimizers).update(std::get<I>(neural_layers).biases, std::get<I>(neural_deriv).biases);
             });
+/*
+            for (int i = 0; i < 64 * 3; ++i) std::cout << std::get<0>(neural_layers).weights[i] << std::endl;
+            for (int i = 0; i < 64 * 3; ++i) std::cout << std::get<0>(neural_deriv).weights[i] << std::endl;
 
-            std::cout << "done batch: " << b << ", error: " << error << std::endl;
+            for (int i = 0; i < 64 * 64; ++i) std::cout << std::get<1>(neural_layers).weights[i] << std::endl;
+            for (int i = 0; i < 64 * 64; ++i) std::cout << std::get<1>(neural_deriv).weights[i] << std::endl;
+
+            for (int i = 0; i < 64 * 200; ++i) std::cout << std::get<2>(neural_layers).weights[i] << std::endl;
+            for (int i = 0; i < 64 * 200; ++i) std::cout << std::get<2>(neural_deriv).weights[i] << std::endl;
+*/
+            std::cout << "done batch: " << b << ", error: " << error/current_batch_size << std::endl;
         }
     }
 
@@ -293,31 +307,17 @@ void Network<
     std::get<0>(conv_activation_results) = input;
 
     compile_range<Num_Conv_Layers>([&]<size_t I>(){
-        (std::get<I>(conv_layers)).apply(std::get<I>(conv_activation_results), 
+        std::get<I>(conv_layers).apply(std::get<I>(conv_activation_results), 
             std::get<I + 1>(conv_weighted_inputs), std::get<I + 1>(conv_activation_results));
     });
 
     std::get<0>(neural_activation_results) = 
         std::get<Num_Conv_Layers>(conv_activation_results);
-/*
-    for(size_t t = 0; t < 21; ++t) std::cout << std::get<1>(conv_activation_results)[t] << " ";
-    std::cout << std::endl;
-    for(size_t t = 0; t < 6; ++t) std::cout << std::get<2>(conv_activation_results)[t] << " ";
-    std::cout << std::endl;
-    for(size_t t = 0; t < 3; ++t) std::cout << std::get<0>(neural_activation_results)[t] << " ";
-    std::cout << std::endl;
-*/
+    
     compile_range<Num_Neural_Layers>([&]<size_t I>(){
-        (std::get<I>(neural_layers)).apply(std::get<I>(neural_activation_results), 
+        std::get<I>(neural_layers).apply(std::get<I>(neural_activation_results), 
             std::get<I + 1>(neural_weighted_inputs), std::get<I + 1>(neural_activation_results));
     });
-
-    for(size_t t = 0; t < 64; ++t) std::cout << std::get<1>(neural_activation_results)[t] << " ";
-    std::cout << std::endl;
-    for(size_t t = 0; t < 64; ++t) std::cout << std::get<2>(neural_activation_results)[t] << " ";
-    std::cout << std::endl;
-    for(size_t t = 0; t < 200; ++t) std::cout << std::get<3>(neural_activation_results)[t] << " ";
-    std::cout << std::endl;
 }
 
 template<
@@ -342,13 +342,13 @@ void Network<
     constexpr std::size_t Num_Conv_Layers = std::tuple_size_v<Conv_Layer_Tuple>;
     constexpr std::size_t Num_Neural_Layers = std::tuple_size_v<Neural_Layer_Tuple>;
 
-    std::get<Num_Neural_Layers - 1>(neural_layer_deriv).biases = true_output;
+    std::get<Num_Neural_Layers - 1>(neural_layer_deriv).biases = 
+        std::get<Num_Neural_Layers>(neural_activation_results);
 
     compile_range<std::tuple_element_t<Num_Neural_Layers - 1, Neural_Layer_Tuple>::output_neurons>(
     [&]<size_t J>()
     {
-        std::get<Num_Neural_Layers - 1>(neural_layer_deriv).biases[J] -= 
-            std::get<Num_Neural_Layers>(neural_activation_results)[J];
+        std::get<Num_Neural_Layers - 1>(neural_layer_deriv).biases[J] -= true_output[J];
         
         compile_range<std::tuple_element_t<Num_Neural_Layers - 1, Neural_Layer_Tuple>::input_neurons>(
         [&]<size_t K>()
@@ -422,7 +422,7 @@ void Network<
                         [&]<size_t W>()
                         {   
                             constexpr size_t delta_id = 
-                                IC * std::tuple_element_t<Num_Conv_Layers, Conv_Feature_Tuple>::size_y *
+                                OC * std::tuple_element_t<Num_Conv_Layers, Conv_Feature_Tuple>::size_y *
                                 std::tuple_element_t<Num_Conv_Layers, Conv_Feature_Tuple>::size_z +
                                 H * std::tuple_element_t<Num_Conv_Layers, Conv_Feature_Tuple>::size_z +
                                 W;
@@ -449,7 +449,7 @@ void Network<
                                         activation_width < std::tuple_element_t<Num_Conv_Layers - 1, Conv_Feature_Tuple>::size_z)
                                     {
                                         constexpr size_t activation_id = 
-                                            OC * std::tuple_element_t<Num_Conv_Layers - 1, Conv_Feature_Tuple>::size_y *
+                                            IC * std::tuple_element_t<Num_Conv_Layers - 1, Conv_Feature_Tuple>::size_y *
                                             std::tuple_element_t<Num_Conv_Layers - 1, Conv_Feature_Tuple>::size_z +
                                             activation_height * std::tuple_element_t<Num_Conv_Layers - 1, Conv_Feature_Tuple>::size_z +
                                             activation_width;
@@ -468,10 +468,12 @@ void Network<
                         std::tuple_element_t<Num_Conv_Layers - 1, Conv_Layer_Tuple>::kernel_size +
                         IC * std::tuple_element_t<Num_Conv_Layers - 1, Conv_Layer_Tuple>::kernel_size *
                         std::tuple_element_t<Num_Conv_Layers - 1, Conv_Layer_Tuple>::kernel_size +
-                        KW * std::tuple_element_t<Num_Conv_Layers - 1, Conv_Layer_Tuple>::kernel_size + 
-                        KH;
+                        KH * std::tuple_element_t<Num_Conv_Layers - 1, Conv_Layer_Tuple>::kernel_size + 
+                        KW;
 
-                    std::get<Num_Conv_Layers - 1>(conv_layer_deriv).kernels[kernel_deriv_id] = sum;
+                    std::get<Num_Conv_Layers - 1>(conv_layer_deriv).kernels[kernel_deriv_id] = sum / (
+                        std::tuple_element_t<Num_Conv_Layers - 1, Conv_Layer_Tuple>::pooling_size *
+                        std::tuple_element_t<Num_Conv_Layers - 1, Conv_Layer_Tuple>::pooling_size);
                 });
             });
         });
@@ -508,6 +510,27 @@ void Network<
             std::get<Num_Conv_Layers - I + 1>(layer_delta), 
             std::get<Num_Conv_Layers - I>(layer_delta));
 
+        CNN::compile_range<std::tuple_element_t<Num_Conv_Layers - I - 1, Conv_Layer_Tuple>::output_channels>(
+        [&]<size_t OC>()
+        {
+            compile_range<std::tuple_element_t<Num_Conv_Layers - I, Conv_Feature_Tuple>::size_y>(
+            [&]<size_t H>()
+            {
+                compile_range<std::tuple_element_t<Num_Conv_Layers - I, Conv_Feature_Tuple>::size_z>(
+                [&]<size_t W>()
+                {   
+                    constexpr size_t delta_id = 
+                        OC * std::tuple_element_t<Num_Conv_Layers - I, Conv_Feature_Tuple>::size_y *
+                        std::tuple_element_t<Num_Conv_Layers - I, Conv_Feature_Tuple>::size_z + 
+                        H * std::tuple_element_t<Num_Conv_Layers - I, Conv_Feature_Tuple>::size_z + W;
+
+                    std::get<Num_Conv_Layers - I>(layer_delta)[delta_id] *= 
+                        std::get<Num_Conv_Layers - I - 1>(conv_layers).activation_func.derivative(
+                        std::get<Num_Conv_Layers - I>(conv_weighted_inputs)[delta_id]);
+                });
+            });
+        });
+
         // based on delta L, compule the kernel and bias derivatives for L
         compile_range<std::tuple_element_t<Num_Conv_Layers - I - 1, Conv_Layer_Tuple>::output_channels>(
         [&]<size_t OC>()
@@ -530,7 +553,7 @@ void Network<
                             [&]<size_t W>()
                             {   
                                 constexpr size_t delta_id = 
-                                    IC * std::tuple_element_t<Num_Conv_Layers - I, Conv_Feature_Tuple>::size_y *
+                                    OC * std::tuple_element_t<Num_Conv_Layers - I, Conv_Feature_Tuple>::size_y *
                                     std::tuple_element_t<Num_Conv_Layers - I, Conv_Feature_Tuple>::size_z +
                                     H * std::tuple_element_t<Num_Conv_Layers - I, Conv_Feature_Tuple>::size_z +
                                     W;
@@ -557,7 +580,7 @@ void Network<
                                             activation_width < std::tuple_element_t<Num_Conv_Layers - I - 1, Conv_Feature_Tuple>::size_z)
                                         {
                                             constexpr size_t activation_id = 
-                                                OC * std::tuple_element_t<Num_Conv_Layers - I - 1, Conv_Feature_Tuple>::size_y *
+                                                IC * std::tuple_element_t<Num_Conv_Layers - I - 1, Conv_Feature_Tuple>::size_y *
                                                 std::tuple_element_t<Num_Conv_Layers - I - 1, Conv_Feature_Tuple>::size_z +
                                                 activation_height * std::tuple_element_t<Num_Conv_Layers - I - 1, Conv_Feature_Tuple>::size_z +
                                                 activation_width;
@@ -576,10 +599,12 @@ void Network<
                             std::tuple_element_t<Num_Conv_Layers - I - 1, Conv_Layer_Tuple>::kernel_size +
                             IC * std::tuple_element_t<Num_Conv_Layers - I - 1, Conv_Layer_Tuple>::kernel_size *
                             std::tuple_element_t<Num_Conv_Layers - I - 1, Conv_Layer_Tuple>::kernel_size +
-                            KW * std::tuple_element_t<Num_Conv_Layers - I - 1, Conv_Layer_Tuple>::kernel_size + 
-                            KH;
+                            KH * std::tuple_element_t<Num_Conv_Layers - I - 1, Conv_Layer_Tuple>::kernel_size + 
+                            KW;
 
-                        std::get<Num_Conv_Layers - I - 1>(conv_layer_deriv).kernels[kernel_deriv_id] = sum;
+                        std::get<Num_Conv_Layers - I - 1>(conv_layer_deriv).kernels[kernel_deriv_id] = sum /(
+                            std::tuple_element_t<Num_Conv_Layers - I - 1, Conv_Layer_Tuple>::pooling_size *
+                            std::tuple_element_t<Num_Conv_Layers - I - 1, Conv_Layer_Tuple>::pooling_size);
                     });
                 });
             });
@@ -598,6 +623,7 @@ void Network<
                 {   
                     constexpr size_t delta_id = 
                         OC * std::tuple_element_t<Num_Conv_Layers - I, Conv_Feature_Tuple>::size_y *
+                        std::tuple_element_t<Num_Conv_Layers - I, Conv_Feature_Tuple>::size_z + 
                         H * std::tuple_element_t<Num_Conv_Layers - I, Conv_Feature_Tuple>::size_z +
                         W;
                     
