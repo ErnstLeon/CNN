@@ -22,7 +22,7 @@ struct Convolution_Layer{
 
     using type = T;
 
-    static constexpr A_FUNC activation_func{};
+    inline static A_FUNC activation_func{};
 
     static constexpr size_t input_channels = CIN;
     static constexpr size_t output_channels = COUT;
@@ -228,7 +228,7 @@ struct Neural_Layer{
 
     using type = T;
 
-    static constexpr A_FUNC activation_func{};
+    inline static A_FUNC activation_func{};
 
     static constexpr size_t input_neurons = INPUT_NEURONS;
     static constexpr size_t output_neurons = OUTPUT_NEURONS;
@@ -320,7 +320,7 @@ struct Neural_Layer<INPUT_NEURONS, OUTPUT_NEURONS, Softmax<T>, T>{
 
     using type = T;
 
-    Softmax<T> output_function{};
+    inline static Softmax<T> activation_func{};
 
     static constexpr size_t input_neurons = INPUT_NEURONS;
     static constexpr size_t output_neurons = OUTPUT_NEURONS;
@@ -377,7 +377,7 @@ struct Neural_Layer<INPUT_NEURONS, OUTPUT_NEURONS, Softmax<T>, T>{
             output_weighted_inputs[output_neuron] = tmp;
         });
 
-        output_activation_results = output_function.apply(output_weighted_inputs);
+        output_activation_results = activation_func.apply(output_weighted_inputs);
     }
 
     template<

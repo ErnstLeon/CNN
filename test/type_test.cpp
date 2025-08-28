@@ -237,7 +237,7 @@ TEST(NetworkTest, InputForwarding) {
     layer_2.kernels[K / 2 * K + K / 2] = 3;
     layer_2.biases[0] = 1;
 
-    CNN::Neural_Layer<25, 25, CNN::ReLU<float>> layer_3(false);
+    CNN::Neural_Layer<25, 25, CNN::Softmax<float>> layer_3(false);
     for(size_t i = 0; i < 25; ++i) layer_3.weights[i * 25 + i] = 2;
 
     auto network = CNN::Network::network<3, 5, 5, 2, 1>(layer_1, layer_2, layer_3);
@@ -278,7 +278,7 @@ TEST(NetworkTest, InputForwarding) {
 
     for (size_t i = 0; i < 25; ++i) {
         EXPECT_FLOAT_EQ(std::get<1>(neural_weighted_inputs)[i], static_cast<float>(20));
-        EXPECT_FLOAT_EQ(std::get<1>(neural_activation_outputs)[i], static_cast<float>(20));
+        EXPECT_FLOAT_EQ(std::get<1>(neural_activation_outputs)[i], static_cast<float>(0.04));
     }
     
 }
@@ -293,7 +293,7 @@ TEST(NetworkBuildTest, Correct_LayerShapeDeduction)
     CNN::Convolution_Layer<3, 9, 3, 2, 2, CNN::ReLU<float>> con_layer_2;
 
     CNN::Neural_Layer<64, 64, CNN::ReLU<float>> neural_layer_1;
-    CNN::Neural_Layer<64, 200, CNN::ReLU<float>> neural_layer_2;
+    CNN::Neural_Layer<64, 200, CNN::Softmax<float>> neural_layer_2;
 
     auto network = CNN::Network::network<CHANNELS, IMG_HEIGHT, IMG_WIDTH, 2, 2>(
         con_layer_1, con_layer_2, neural_layer_1, neural_layer_2);

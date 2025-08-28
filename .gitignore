@@ -28,7 +28,12 @@
 !include/core/types/layer_types.hpp
 !include/core/types/stack_tensor.hpp
 
+!include/network/network_backward.hpp
 !include/network/network_base.hpp
+!include/network/network_evaluate.hpp
+!include/network/network_forward.hpp
+!include/network/network_gradient.hpp
+!include/network/network_train.hpp
 
 !include/utility/image_conversion.hpp
 !include/utility/tiny_data_loader.hpp

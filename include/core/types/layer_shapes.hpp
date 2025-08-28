@@ -47,7 +47,6 @@ inline consteval bool output_eq_input_channels() {
     }
 }
 
-
 template<typename Layer_Tuple, size_t H, size_t... Hs>
 inline consteval auto get_heights(){
 
