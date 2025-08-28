@@ -32,6 +32,11 @@ struct HeapTensor1D {
 
     HeapTensor1D(HeapTensor1D&& other) noexcept : contents(std::move(other.contents)) {}
 
+    HeapTensor1D(std::initializer_list<T> input) : contents(input) {
+        if (input.size() != size)
+            throw std::runtime_error("Size mismatch");
+    }
+
     HeapTensor1D& operator=(const HeapTensor1D& other) { 
         contents = other.contents; 
         return *this; 
@@ -120,6 +125,11 @@ struct HeapTensor2D {
     HeapTensor2D(const HeapTensor2D& other) : contents(other.contents) {}
 
     HeapTensor2D(HeapTensor2D&& other) noexcept : contents(std::move(other.contents)) {}
+
+    HeapTensor2D(std::initializer_list<T> input) : contents(input) {
+        if (input.size() != size)
+            throw std::runtime_error("Size mismatch");
+    }
 
     HeapTensor2D& operator=(const HeapTensor2D& other) { 
         contents = other.contents; return *this; 
@@ -210,6 +220,11 @@ struct HeapTensor3D {
     HeapTensor3D(const HeapTensor3D& other) : contents(other.contents) {}
 
     HeapTensor3D(HeapTensor3D&& other) noexcept : contents(std::move(other.contents)) {}
+
+    HeapTensor3D(std::initializer_list<T> input) : contents(input) {
+        if (input.size() != size)
+            throw std::runtime_error("Size mismatch");
+    }
 
     HeapTensor3D& operator=(const HeapTensor3D& other) { 
         contents = other.contents; 
@@ -302,6 +317,11 @@ struct HeapTensor4D {
     HeapTensor4D(const HeapTensor4D& other) : contents(other.contents) {}
 
     HeapTensor4D(HeapTensor4D&& other) noexcept : contents(std::move(other.contents)) {}
+
+    HeapTensor4D(std::initializer_list<T> input) : contents(input) {
+        if (input.size() != size)
+            throw std::runtime_error("Size mismatch");
+    }
 
     HeapTensor4D& operator=(const HeapTensor4D& other) { 
         contents = other.contents; return *this; 
