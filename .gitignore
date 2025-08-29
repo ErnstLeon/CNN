@@ -1,7 +1,9 @@
 *
 !.gitignore
-!.gitlab-ci.yml
 !README.md
+!.github/
+!.github/workflows
+!.github/workflows/ci.yml
 
 !include/
 !include/utility/
