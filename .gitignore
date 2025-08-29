@@ -1,6 +1,7 @@
 *
 !.gitignore
 !.gitlab-ci.yml
+!README.md
 
 !include/
 !include/utility/

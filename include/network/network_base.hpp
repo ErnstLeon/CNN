@@ -168,6 +168,4 @@ inline auto network(Layer_Args&&... args)
 
 }
 
-
-
 #endif // NETWORK_BASE_HPP
