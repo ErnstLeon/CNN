@@ -109,6 +109,9 @@ public:
             first neural layer, an additional fully-connected layer with ReLU activation is inserted
             to bridge the connection.
         - Finally, assembles the CNN from the prepared tuples.
+
+        ! The final layer must so far use softmax + cross entropy los,
+            so the delta simplifies to output - true_output.
 */
 template<
     size_t C, size_t H, size_t W,
@@ -128,13 +131,17 @@ inline auto network(Layer_Args&&... args)
 
     using Conv_Features_Tuple_t = decltype(features_from_layer<C, H, W, Conv_Layers_t>());
     using Last_Conv_Features_t = std::tuple_element_t<NUM_CONV_LAYERS, Conv_Features_Tuple_t>;
+
     using First_Neural_Layer_t = std::tuple_element_t<0, Neural_Layers_t>;
     using Last_Neural_Layer_t = std::tuple_element_t<NUM_NEURAL_LAYERS - 1, Neural_Layers_t>;
 
-    static_assert(output_eq_input_channels<Conv_Layers_t>(), "Output and input channel size does not match.");
-    static_assert(output_eq_input_neurons<Neural_Layers_t>(), "Output and input neuron size does not match.");
+    static_assert(output_eq_input_channels<Conv_Layers_t>(), 
+        "Output and input channel size does not match.");
+    static_assert(output_eq_input_neurons<Neural_Layers_t>(), 
+        "Output and input neuron size does not match.");
     static_assert(std::is_same_v<decltype(Last_Neural_Layer_t::activation_func), 
-        Softmax<typename Last_Neural_Layer_t::type>>, "Last activation function must be softmax.");
+        Softmax<typename Last_Neural_Layer_t::type>>, 
+        "Last activation function must be softmax.");
 
     if constexpr (Last_Conv_Features_t::size != First_Neural_Layer_t::input_neurons)
     {
