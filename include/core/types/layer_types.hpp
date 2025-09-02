@@ -39,12 +39,13 @@ struct Convolution_Layer{
     Convolution_Layer(bool rnd = true) {
         if(rnd)
         {
-            constexpr size_t fan_in  = input_channels  * kernel_size * kernel_size;
+            constexpr size_t fan_in = input_channels * kernel_size * kernel_size;
 
-            std::mt19937 gen(100);
+            std::random_device rd;
+            std::mt19937 gen(rd());
 
-            const T r = std::sqrt(T(6) / T(fan_in));
-            std::uniform_real_distribution<T> wdist(-r, r);
+            const T stddev = std::sqrt(T(2) / T(fan_in));
+            std::normal_distribution<T> wdist(0.0, stddev);
 
             UNROLL_PRAGMA
             for (size_t i = 0; i < kernels_size; ++i) 
@@ -242,15 +243,16 @@ struct Neural_Layer{
     Neural_Layer(bool rnd = true) {
         if(rnd)
         {
-            constexpr size_t fan_in  = input_neurons;
+            constexpr size_t fan_in = input_neurons;
 
-            std::mt19937 gen(100);
+            std::random_device rd;
+            std::mt19937 gen(rd());
 
-            const T r = std::sqrt(T(6) / T(fan_in));
-            std::uniform_real_distribution<T> wdist(-r, r);
+            const T stddev = std::sqrt(T(2) / T(fan_in));
+            std::normal_distribution<T> wdist(0.0, stddev);
 
             UNROLL_PRAGMA
-            for (size_t i = 0; i < weights_size; ++i) 
+            for (size_t i = 0; i < weights_size; ++i)
                 weights[i] = wdist(gen);
 
             biases.fill(T(0));
