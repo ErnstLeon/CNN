@@ -85,6 +85,10 @@ public:
     HeapTensor1D<output_neurons, output_type> evaluate(
         const HeapTensor3D<input_channels, input_height, input_width, input_type> &);
 
+    std::pair<output_type , output_type> assess(
+        const std::vector<std::pair<HeapTensor3D<input_channels, input_height, input_width, input_type>, 
+        HeapTensor1D<output_neurons, output_type>>> &);
+
 };
 
 /*

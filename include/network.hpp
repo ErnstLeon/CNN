@@ -3,6 +3,7 @@
 
 #include "network/network_base.hpp"
 
+#include "network/network_assess.hpp"
 #include "network/network_backward.hpp"
 #include "network/network_evaluate.hpp"
 #include "network/network_forward.hpp"

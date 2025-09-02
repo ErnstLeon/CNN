@@ -28,12 +28,10 @@ void Network<
 {
     using T = input_type;
 
-    static constexpr size_t num_conv_layers = std::tuple_size_v<Conv_Layer_Tuple>;
-    static constexpr size_t num_neural_layers = std::tuple_size_v<Neural_Layer_Tuple>;
-
     auto dataset = dataset_orig;
 
-    std::mt19937 gen(100);
+    std::random_device rd;
+    std::mt19937 gen(rd());
     size_t dataset_size = dataset.size();
     size_t num_batches = (dataset_size + batch_size - 1) / batch_size;
 
@@ -65,9 +63,7 @@ void Network<
                 std::get<I>(neural_deriv).biases.fill(0);
             });
 
-            T error = 0;
-
-            #pragma omp parallel shared(conv_deriv, neural_deriv) reduction(+ : error)
+            #pragma omp parallel shared(conv_deriv, neural_deriv)
             {
                 Conv_Layer_Tuple thread_conv_deriv;
                 Neural_Layer_Tuple thread_neural_deriv;
@@ -107,14 +103,6 @@ void Network<
                         std::get<I>(thread_neural_deriv).weights += std::get<I>(local_neural_deriv).weights;
                         std::get<I>(thread_neural_deriv).biases += std::get<I>(local_neural_deriv).biases;
                     });
-
-                    Conv_Feature_Tuple a;
-                    Conv_Feature_Tuple b;
-                    Neural_Feature_Tuple c; 
-                    Neural_Feature_Tuple d;
-
-                    foward_propagate(input, a,b,c,d);
-                    error += cross_entropy_loss(std::get<num_neural_layers>(d), true_output);
                 }
 
                 #pragma omp critical
@@ -158,9 +146,12 @@ void Network<
                 std::get<I>(neural_weights_optimizers).update(std::get<I>(neural_layers).weights, std::get<I>(neural_deriv).weights);
                 std::get<I>(neural_biases_optimizers).update(std::get<I>(neural_layers).biases, std::get<I>(neural_deriv).biases);
             });
-
-            std::cout << "done batch: " << b << ", error: " << error/current_batch_size << std::endl;
         }
+
+        auto [loss, error] = assess(dataset_orig);
+
+        std::cout << "done epoch: " << epoch << "/" << num_epochs << std::endl;
+        std::cout << "average loss: " << loss << " average error: " << error << std::endl;
     }
 }
 }
