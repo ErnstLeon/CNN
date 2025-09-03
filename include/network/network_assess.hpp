@@ -13,17 +13,21 @@ namespace CNN::Network
 {
 
 template<
-    typename Conv_Layer_Tuple, typename Neural_Layer_Tuple, 
-    typename Conv_Feature_Tuple, typename Neural_Feature_Tuple>
+    typename Conv_Layer_Tuple, 
+    typename Neural_Layer_Tuple, 
+    typename Conv_Feature_Tuple, 
+    typename Pooled_Feature_Tuple, 
+    typename Neural_Feature_Tuple>
 requires(
-    std::tuple_size_v<Conv_Layer_Tuple> == std::tuple_size_v<Conv_Feature_Tuple> - 1 && 
-    std::tuple_size_v<Neural_Layer_Tuple> == std::tuple_size_v<Neural_Feature_Tuple> - 1)
+    std::tuple_size_v<Conv_Layer_Tuple> == std::tuple_size_v<Conv_Feature_Tuple> - 1 
+    && std::tuple_size_v<Neural_Layer_Tuple> == std::tuple_size_v<Neural_Feature_Tuple> - 1
+    && std::tuple_size_v<Conv_Feature_Tuple> == std::tuple_size_v<Pooled_Feature_Tuple>)
 std::pair<
-    typename Network<Conv_Layer_Tuple, Neural_Layer_Tuple, Conv_Feature_Tuple, Neural_Feature_Tuple>::output_type, 
-    typename Network<Conv_Layer_Tuple, Neural_Layer_Tuple, Conv_Feature_Tuple, Neural_Feature_Tuple>::output_type> 
+    typename Network<Conv_Layer_Tuple, Neural_Layer_Tuple, Conv_Feature_Tuple, Pooled_Feature_Tuple, Neural_Feature_Tuple>::output_type, 
+    typename Network<Conv_Layer_Tuple, Neural_Layer_Tuple, Conv_Feature_Tuple, Pooled_Feature_Tuple, Neural_Feature_Tuple>::output_type> 
 Network<
     Conv_Layer_Tuple, Neural_Layer_Tuple, 
-    Conv_Feature_Tuple, Neural_Feature_Tuple>::assess(
+    Conv_Feature_Tuple, Pooled_Feature_Tuple, Neural_Feature_Tuple>::assess(
     const std::vector<std::pair<HeapTensor3D<input_channels, input_height, input_width, input_type>, 
     HeapTensor1D<output_neurons, output_type>>> & dataset)
 {

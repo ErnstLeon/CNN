@@ -32,6 +32,7 @@
 !include/core/types/layer_types.hpp
 !include/core/types/stack_tensor.hpp
 
+!include/network/network_assess.hpp
 !include/network/network_backward.hpp
 !include/network/network_base.hpp
 !include/network/network_evaluate.hpp

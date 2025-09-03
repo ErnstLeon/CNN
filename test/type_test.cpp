@@ -69,9 +69,9 @@ TEST(ConvolutionLayerTest, ZeroApply) {
 
     CNN::HeapTensor3D<CIN, 5, 5, float> input(1);
     CNN::HeapTensor3D<COUT, 5, 5, float> output_conv;
-    CNN::HeapTensor3D<COUT, 5, 5, float> output_activ;
+    CNN::HeapTensor3D<COUT, 5, 5, float> output_pooling;
 
-    layer.apply(input, output_conv, output_activ);
+    layer.apply(input, output_conv, output_pooling);
 
     for (float val : output_conv) {
         EXPECT_FLOAT_EQ(val, static_cast<float>(0));
@@ -87,9 +87,9 @@ TEST(ConvolutionLayerTest, IdentApply) {
 
     CNN::HeapTensor3D<CIN, 5, 5, float> input(2);
     CNN::HeapTensor3D<COUT, 5, 5, float> output_conv;
-    CNN::HeapTensor3D<COUT, 5, 5, float> output_activ;
+    CNN::HeapTensor3D<COUT, 5, 5, float> output_pooling;
 
-    layer.apply(input, output_conv, output_activ);
+    layer.apply(input, output_conv, output_pooling);
 
     for (size_t i = 0; i < 25; ++i) {
         EXPECT_FLOAT_EQ(input[i], output_conv[i]);
@@ -104,25 +104,29 @@ TEST(ConvolutionLayerTest, PoolingApply) {
     layer.kernels[K / 2 * K + K / 2] = 1;
 
     CNN::HeapTensor3D<CIN, 5, 5, float> input(2);
-    CNN::HeapTensor3D<COUT, 3, 3, float> output_conv;
-    CNN::HeapTensor3D<COUT, 3, 3, float> output_activ;
+    CNN::HeapTensor3D<COUT, 5, 5, float> output_conv;
+    CNN::HeapTensor3D<COUT, 3, 3, float> output_pooling;
 
-    layer.apply(input, output_conv, output_activ);
+    layer.apply(input, output_conv, output_pooling);
+
+    for (size_t i = 0; i < 25; ++i) {
+        EXPECT_FLOAT_EQ(static_cast<float>(2), output_conv[i]);
+    }
 
     for (size_t i = 0; i < 2; ++i) {
-        EXPECT_FLOAT_EQ(static_cast<float>(2), output_conv[i]);
+        EXPECT_FLOAT_EQ(static_cast<float>(2), output_pooling[i]);
     }
-    EXPECT_FLOAT_EQ(static_cast<float>(1), output_conv[2]);
+    EXPECT_FLOAT_EQ(static_cast<float>(1), output_pooling[2]);
 
     for (size_t i = 3; i < 5; ++i) {
-        EXPECT_FLOAT_EQ(static_cast<float>(2), output_conv[i]);
+        EXPECT_FLOAT_EQ(static_cast<float>(2), output_pooling[i]);
     }
-    EXPECT_FLOAT_EQ(static_cast<float>(1), output_conv[5]);
+    EXPECT_FLOAT_EQ(static_cast<float>(1), output_pooling[5]);
 
     for (size_t i = 6; i < 8; ++i) {
-        EXPECT_FLOAT_EQ(static_cast<float>(1), output_conv[i]);
+        EXPECT_FLOAT_EQ(static_cast<float>(1), output_pooling[i]);
     }
-    EXPECT_FLOAT_EQ(static_cast<float>(0.5), output_conv[8]);
+    EXPECT_FLOAT_EQ(static_cast<float>(0.5), output_pooling[8]);
 }
 
 TEST(ConvolutionLayerTest, StridingApply) {
@@ -134,7 +138,7 @@ TEST(ConvolutionLayerTest, StridingApply) {
 
     CNN::HeapTensor3D<CIN, 5, 5, float> input(0);
     CNN::HeapTensor3D<COUT, 2, 2, float> output_conv;
-    CNN::HeapTensor3D<COUT, 2, 2, float> output_activ;
+    CNN::HeapTensor3D<COUT, 2, 2, float> output_pooling;
 
     input[0] = static_cast<float>(2);
     input[3] = static_cast<float>(1);
@@ -142,7 +146,7 @@ TEST(ConvolutionLayerTest, StridingApply) {
     input[15] = static_cast<float>(2);
     input[18] = static_cast<float>(1);
 
-    layer.apply(input, output_conv, output_activ);
+    layer.apply(input, output_conv, output_pooling);
 
     EXPECT_FLOAT_EQ(static_cast<float>(2), output_conv[0]);
     EXPECT_FLOAT_EQ(static_cast<float>(1), output_conv[1]);
@@ -159,9 +163,9 @@ TEST(ConvolutionLayerTest, OnesApply) {
 
     CNN::HeapTensor3D<CIN, 5, 5, float> input(2);
     CNN::HeapTensor3D<COUT, 5, 5, float> output_conv;
-    CNN::HeapTensor3D<COUT, 5, 5, float> output_activ;
+    CNN::HeapTensor3D<COUT, 5, 5, float> output_pooling;
 
-    layer.apply(input, output_conv, output_activ);
+    layer.apply(input, output_conv, output_pooling);
 
     for(size_t i = 0; i < 5; ++i){
         for(size_t j = 0; j < 5; ++j){
@@ -195,9 +199,9 @@ TEST(ConvolutionLayerTest, InputChannelAddition) {
     CNN::HeapTensor3D<3, 5, 5, float> input(1);
 
     CNN::HeapTensor3D<COUT, 5, 5, float> output_conv;
-    CNN::HeapTensor3D<COUT, 5, 5, float> output_activ;
+    CNN::HeapTensor3D<COUT, 5, 5, float> output_pooling;
 
-    layer.apply(input, output_conv, output_activ);
+    layer.apply(input, output_conv, output_pooling);
 
     for (size_t i = 0; i < 25; ++i) {
         EXPECT_FLOAT_EQ(output_conv[i], static_cast<float>(3));
@@ -214,14 +218,12 @@ TEST(ConvolutionLayerTest, ApplyLayer) {
 
     for(size_t i = 0; i < 2 * 3 * 3; ++i) input[i] = i + 1;
 
-    CNN::HeapTensor3D<1, 1, 1, float> output_conv;
-    CNN::HeapTensor3D<1, 1, 1, float> output_activ;
+    CNN::HeapTensor3D<1, 2, 2, float> output_conv;
+    CNN::HeapTensor3D<1, 1, 1, float> output_pooling;
 
-    layer.apply(input, output_conv, output_activ);
+    layer.apply(input, output_conv, output_pooling);
 
-    EXPECT_FLOAT_EQ(output_conv[0], 254.25);
-    EXPECT_FLOAT_EQ(output_activ[0], 254.25);
-
+    EXPECT_FLOAT_EQ(output_pooling[0], 254.25);
 }
 
 TEST(NetworkTest, InputForwarding) {
@@ -243,32 +245,32 @@ TEST(NetworkTest, InputForwarding) {
     auto network = CNN::Network::network<3, 5, 5, 2, 1>(layer_1, layer_2, layer_3);
 
     typename decltype(network)::conv_feature_tuple conv_weighted_inputs;
-    typename decltype(network)::conv_feature_tuple conv_activation_outputs;
+    typename decltype(network)::pooled_feature_tuple pooling_outputs;
 
     typename decltype(network)::neural_feature_tuple neural_weighted_inputs;
     typename decltype(network)::neural_feature_tuple neural_activation_outputs;
 
     std::vector<float> input(75, 1);
 
-    network.foward_propagate(input, 
+    network.forward_propagate(input, 
         conv_weighted_inputs, 
-        conv_activation_outputs, 
+        pooling_outputs, 
         neural_weighted_inputs, 
         neural_activation_outputs);
 
     for (size_t i = 0; i < 75; ++i) {
         EXPECT_FLOAT_EQ(std::get<0>(conv_weighted_inputs)[i], static_cast<float>(0));
-        EXPECT_FLOAT_EQ(std::get<0>(conv_activation_outputs)[i], static_cast<float>(1));
+        EXPECT_FLOAT_EQ(std::get<0>(pooling_outputs)[i], static_cast<float>(1));
     }
 
     for (size_t i = 0; i < 25; ++i) {
         EXPECT_FLOAT_EQ(std::get<1>(conv_weighted_inputs)[i], static_cast<float>(3));
-        EXPECT_FLOAT_EQ(std::get<1>(conv_activation_outputs)[i], static_cast<float>(3));
+        EXPECT_FLOAT_EQ(std::get<1>(pooling_outputs)[i], static_cast<float>(3));
     }
 
     for (size_t i = 0; i < 25; ++i) {
         EXPECT_FLOAT_EQ(std::get<2>(conv_weighted_inputs)[i], static_cast<float>(10));
-        EXPECT_FLOAT_EQ(std::get<2>(conv_activation_outputs)[i], static_cast<float>(10));
+        EXPECT_FLOAT_EQ(std::get<2>(pooling_outputs)[i], static_cast<float>(10));
     }
 
     for (size_t i = 0; i < 25; ++i) {
@@ -302,9 +304,11 @@ TEST(NetworkBuildTest, Correct_LayerShapeDeduction)
     using Neural_Layers_Tuple = decltype(network.neural_layers);
 
     using Conv_Features_Tuple = decltype(
-        CNN::features_from_layer<CHANNELS, IMG_HEIGHT, IMG_WIDTH, Conv_Layers_Tuple>());
+        CNN::conv_features_from_layer<CHANNELS, IMG_HEIGHT, IMG_WIDTH, Conv_Layers_Tuple>());
+    using Pooled_Features_Tuple = decltype(
+        CNN::pooled_features_from_layer<CHANNELS, IMG_HEIGHT, IMG_WIDTH, Conv_Layers_Tuple>());
     using Neural_Features_Tuple = decltype(
-        CNN::features_from_layer<Neural_Layers_Tuple>());
+        CNN::neural_features_from_layer<Neural_Layers_Tuple>());
     
     static_assert(std::tuple_size_v<Conv_Layers_Tuple> == 2, 
         "Number of Conv layers in Network does not match input.");
@@ -321,22 +325,49 @@ TEST(NetworkBuildTest, Correct_LayerShapeDeduction)
     static_assert(std::tuple_element_t<0, Conv_Features_Tuple>::size_x == 3, 
         "Channels of first Conv layer in Network does not match input.");
 
+    static_assert(std::tuple_element_t<0, Pooled_Features_Tuple>::size_y == 1, 
+        "Height of first Conv layer in Network does not match input.");
+
+    static_assert(std::tuple_element_t<0, Pooled_Features_Tuple>::size_z == 25, 
+        "Width of first Conv layer in Network does not match input.");
+
+    static_assert(std::tuple_element_t<0, Pooled_Features_Tuple>::size_x == 3, 
+        "Channels of first Conv layer in Network does not match input.");
+
     static_assert(std::tuple_element_t<1, Conv_Features_Tuple>::size_y == 1, 
         "Height of second Conv layer in Network does not match input.");
 
-    static_assert(std::tuple_element_t<1, Conv_Features_Tuple>::size_z == 4, 
+    static_assert(std::tuple_element_t<1, Conv_Features_Tuple>::size_z == 7, 
         "Width of second Conv layer in Network does not match input.");
 
     static_assert(std::tuple_element_t<1, Conv_Features_Tuple>::size_x == 3, 
         "Channels of second Conv layer in Network does not match input.");
 
+    static_assert(std::tuple_element_t<1, Pooled_Features_Tuple>::size_y == 1, 
+        "Height of second Conv layer in Network does not match input.");
+
+    static_assert(std::tuple_element_t<1, Pooled_Features_Tuple>::size_z == 4, 
+        "Width of second Conv layer in Network does not match input.");
+
+    static_assert(std::tuple_element_t<1, Pooled_Features_Tuple>::size_x == 3, 
+        "Channels of second Conv layer in Network does not match input.");
+    
     static_assert(std::tuple_element_t<2, Conv_Features_Tuple>::size_y == 1, 
         "Height of third Conv layer in Network does not match input.");
 
-    static_assert(std::tuple_element_t<2, Conv_Features_Tuple>::size_z == 1, 
+    static_assert(std::tuple_element_t<2, Conv_Features_Tuple>::size_z == 2, 
         "Width of third Conv layer in Network does not match input.");
 
     static_assert(std::tuple_element_t<2, Conv_Features_Tuple>::size_x == 9, 
+        "Channels of third Conv layer in Network does not match input.");
+
+    static_assert(std::tuple_element_t<2, Pooled_Features_Tuple>::size_y == 1, 
+        "Height of third Conv layer in Network does not match input.");
+
+    static_assert(std::tuple_element_t<2, Pooled_Features_Tuple>::size_z == 1, 
+        "Width of third Conv layer in Network does not match input.");
+
+    static_assert(std::tuple_element_t<2, Pooled_Features_Tuple>::size_x == 9, 
         "Channels of third Conv layer in Network does not match input.");
 
     static_assert(std::tuple_element_t<0, Neural_Features_Tuple>::size == 9, 

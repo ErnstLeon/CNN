@@ -17,8 +17,8 @@ namespace CNN::Network
 
     Function Arguments:
         input  : Input data for the CNN (HeapTensor3D with correct shape)
-        conv_weighted_inputs      : Stores the pre-activation outputs of convolution + pooling layers
-        conv_activation_results   : Stores the post-activation outputs of convolution + pooling layers
+        conv_weighted_inputs      : Stores post-activation outputs of convolution layers.
+        pooling_results           : Stores outputs of pooling layers.
         neural_weighted_inputs    : Stores the pre-activation outputs of fully-connected (neural) layers
         neural_activation_results : Stores the post-activation outputs of fully-connected (neural) layers
 
@@ -32,36 +32,44 @@ namespace CNN::Network
           repeated for the neural layers.
 */
 template<
-    typename Conv_Layer_Tuple, typename Neural_Layer_Tuple, 
-    typename Conv_Feature_Tuple, typename Neural_Feature_Tuple>
+    typename Conv_Layer_Tuple, 
+    typename Neural_Layer_Tuple, 
+    typename Conv_Feature_Tuple, 
+    typename Pooled_Feature_Tuple, 
+    typename Neural_Feature_Tuple>
 requires(
-    std::tuple_size_v<Conv_Layer_Tuple> == std::tuple_size_v<Conv_Feature_Tuple> - 1 && 
-    std::tuple_size_v<Neural_Layer_Tuple> == std::tuple_size_v<Neural_Feature_Tuple> - 1)
+    std::tuple_size_v<Conv_Layer_Tuple> == std::tuple_size_v<Conv_Feature_Tuple> - 1 
+    && std::tuple_size_v<Neural_Layer_Tuple> == std::tuple_size_v<Neural_Feature_Tuple> - 1
+    && std::tuple_size_v<Conv_Feature_Tuple> == std::tuple_size_v<Pooled_Feature_Tuple>)
 void Network<
     Conv_Layer_Tuple, Neural_Layer_Tuple, 
-    Conv_Feature_Tuple, Neural_Feature_Tuple>::foward_propagate(
+    Conv_Feature_Tuple, Pooled_Feature_Tuple, Neural_Feature_Tuple>::forward_propagate(
     const HeapTensor3D<input_channels, input_height, input_width, input_type> & input, 
     Conv_Feature_Tuple & conv_weighted_inputs, 
-    Conv_Feature_Tuple & conv_activation_results, 
+    Pooled_Feature_Tuple & pooling_results, 
     Neural_Feature_Tuple & neural_weighted_inputs, 
     Neural_Feature_Tuple & neural_activation_results)
 {
     constexpr std::size_t Num_Conv_Layers = std::tuple_size_v<Conv_Layer_Tuple>;
     constexpr std::size_t Num_Neural_Layers = std::tuple_size_v<Neural_Layer_Tuple>;
 
-    std::get<0>(conv_activation_results) = input;
+    std::get<0>(pooling_results) = input;
 
     compile_range<Num_Conv_Layers>([&]<size_t I>(){
-        std::get<I>(conv_layers).apply(std::get<I>(conv_activation_results), 
-            std::get<I + 1>(conv_weighted_inputs), std::get<I + 1>(conv_activation_results));
+        std::get<I>(conv_layers).apply(
+            std::get<I>(pooling_results), 
+            std::get<I + 1>(conv_weighted_inputs), 
+            std::get<I + 1>(pooling_results));
     });
 
     std::get<0>(neural_activation_results) = 
-        std::get<Num_Conv_Layers>(conv_activation_results);
+        std::get<Num_Conv_Layers>(pooling_results);
     
     compile_range<Num_Neural_Layers>([&]<size_t I>(){
-        std::get<I>(neural_layers).apply(std::get<I>(neural_activation_results), 
-            std::get<I + 1>(neural_weighted_inputs), std::get<I + 1>(neural_activation_results));
+        std::get<I>(neural_layers).apply(
+            std::get<I>(neural_activation_results), 
+            std::get<I + 1>(neural_weighted_inputs), 
+            std::get<I + 1>(neural_activation_results));
     });
 }
 

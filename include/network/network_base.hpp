@@ -11,10 +11,16 @@
 namespace CNN::Network
 {
 
-template<typename Conv_Layer_Tuple, typename Neural_Layer_Tuple, 
-    typename Conv_Feature_Tuple, typename Neural_Feature_Tuple>
-requires (std::tuple_size_v<Conv_Layer_Tuple> == std::tuple_size_v<Conv_Feature_Tuple> - 1 
-    && std::tuple_size_v<Neural_Layer_Tuple> == std::tuple_size_v<Neural_Feature_Tuple> - 1)
+template<
+    typename Conv_Layer_Tuple, 
+    typename Neural_Layer_Tuple, 
+    typename Conv_Feature_Tuple, 
+    typename Pooled_Feature_Tuple, 
+    typename Neural_Feature_Tuple>
+requires(
+    std::tuple_size_v<Conv_Layer_Tuple> == std::tuple_size_v<Conv_Feature_Tuple> - 1 
+    && std::tuple_size_v<Neural_Layer_Tuple> == std::tuple_size_v<Neural_Feature_Tuple> - 1
+    && std::tuple_size_v<Conv_Feature_Tuple> == std::tuple_size_v<Pooled_Feature_Tuple>)
 class Network {
 public:
 
@@ -26,6 +32,8 @@ public:
     using neural_layer_tuple = Neural_Layer_Tuple;
 
     using conv_feature_tuple = Conv_Feature_Tuple;
+    using pooled_feature_tuple = Pooled_Feature_Tuple;
+
     using neural_feature_tuple = Neural_Feature_Tuple;
 
     static constexpr size_t input_channels = std::tuple_element_t<0, Conv_Feature_Tuple>::size_x;
@@ -50,17 +58,17 @@ public:
 
 public: 
 
-    void foward_propagate(
+    void forward_propagate(
         const HeapTensor3D<input_channels, input_height, input_width, input_type> &, 
         Conv_Feature_Tuple &, 
-        Conv_Feature_Tuple &, 
+        Pooled_Feature_Tuple &, 
         Neural_Feature_Tuple &, 
         Neural_Feature_Tuple &);
 
     void backward_propagate(
         const HeapTensor1D<output_neurons, output_type> &, 
         const Conv_Feature_Tuple &, 
-        const Conv_Feature_Tuple &, 
+        const Pooled_Feature_Tuple &, 
         const Neural_Feature_Tuple &, 
         const Neural_Feature_Tuple &,
         Conv_Layer_Tuple &, 
@@ -133,8 +141,9 @@ inline auto network(Layer_Args&&... args)
     using Conv_Layers_t = decltype(conv_layers);
     using Neural_Layers_t = decltype(neural_layers);
 
-    using Conv_Features_Tuple_t = decltype(features_from_layer<C, H, W, Conv_Layers_t>());
-    using Last_Conv_Features_t = std::tuple_element_t<NUM_CONV_LAYERS, Conv_Features_Tuple_t>;
+    using Conv_Features_Tuple_t = decltype(conv_features_from_layer<C, H, W, Conv_Layers_t>());
+    using Pooled_Features_Tuple_t = decltype(pooled_features_from_layer<C, H, W, Conv_Layers_t>());
+    using Last_Pooled_Features_t = std::tuple_element_t<NUM_CONV_LAYERS, Pooled_Features_Tuple_t>;
 
     using First_Neural_Layer_t = std::tuple_element_t<0, Neural_Layers_t>;
     using Last_Neural_Layer_t = std::tuple_element_t<NUM_NEURAL_LAYERS - 1, Neural_Layers_t>;
@@ -147,25 +156,27 @@ inline auto network(Layer_Args&&... args)
         Softmax<typename Last_Neural_Layer_t::type>>, 
         "Last activation function must be softmax.");
 
-    if constexpr (Last_Conv_Features_t::size != First_Neural_Layer_t::input_neurons)
+    if constexpr (Last_Pooled_Features_t::size != First_Neural_Layer_t::input_neurons)
     {
         auto extended_neural_layers = add_tuple_begin(
-            std::move(neural_layers), Neural_Layer<Last_Conv_Features_t::size, 
+            std::move(neural_layers), Neural_Layer<Last_Pooled_Features_t::size, 
             First_Neural_Layer_t::input_neurons, ReLU<typename First_Neural_Layer_t::type>>{});
 
         using Extended_Neural_Layers_t = decltype(extended_neural_layers);
-        using Neural_Features_t = decltype(features_from_layer<Extended_Neural_Layers_t>());
+        using Neural_Features_t = decltype(neural_features_from_layer<Extended_Neural_Layers_t>());
 
         return Network<Conv_Layers_t, Extended_Neural_Layers_t,
-            Conv_Features_Tuple_t, Neural_Features_t>{ 
+            Conv_Features_Tuple_t, Pooled_Features_Tuple_t, 
+            Neural_Features_t>{ 
             std::move(conv_layers), std::move(extended_neural_layers)};
     }
     else
     {
-        using Neural_Features_t = decltype(features_from_layer<Neural_Layers_t>());
+        using Neural_Features_t = decltype(neural_features_from_layer<Neural_Layers_t>());
 
         return Network<Conv_Layers_t, Neural_Layers_t,
-            Conv_Features_Tuple_t, Neural_Features_t>{ 
+            Conv_Features_Tuple_t, Pooled_Features_Tuple_t, 
+            Neural_Features_t>{ 
             std::move(conv_layers), std::move(neural_layers)};
     }
 }

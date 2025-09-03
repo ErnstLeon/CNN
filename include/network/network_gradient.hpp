@@ -31,33 +31,37 @@ namespace CNN::Network
           results to compute the gradients of all layers.
 */
 template<
-    typename Conv_Layer_Tuple, typename Neural_Layer_Tuple, 
-    typename Conv_Feature_Tuple, typename Neural_Feature_Tuple>
+    typename Conv_Layer_Tuple, 
+    typename Neural_Layer_Tuple, 
+    typename Conv_Feature_Tuple, 
+    typename Pooled_Feature_Tuple, 
+    typename Neural_Feature_Tuple>
 requires(
-    std::tuple_size_v<Conv_Layer_Tuple> == std::tuple_size_v<Conv_Feature_Tuple> - 1 && 
-    std::tuple_size_v<Neural_Layer_Tuple> == std::tuple_size_v<Neural_Feature_Tuple> - 1)
+    std::tuple_size_v<Conv_Layer_Tuple> == std::tuple_size_v<Conv_Feature_Tuple> - 1 
+    && std::tuple_size_v<Neural_Layer_Tuple> == std::tuple_size_v<Neural_Feature_Tuple> - 1
+    && std::tuple_size_v<Conv_Feature_Tuple> == std::tuple_size_v<Pooled_Feature_Tuple>)
 void Network<
     Conv_Layer_Tuple, Neural_Layer_Tuple, 
-    Conv_Feature_Tuple, Neural_Feature_Tuple>::compute_gradient(
+    Conv_Feature_Tuple, Pooled_Feature_Tuple, Neural_Feature_Tuple>::compute_gradient(
     const HeapTensor3D<input_channels, input_height, input_width, input_type> & input, 
     const HeapTensor1D<output_neurons, output_type> & output, 
     Conv_Layer_Tuple & conv_gradients,
     Neural_Layer_Tuple & neural_gradients)
 {
     Conv_Feature_Tuple conv_weighted_inputs{};
-    Conv_Feature_Tuple conv_activation_outputs{};
+    Pooled_Feature_Tuple pooling_outputs{};
     Neural_Feature_Tuple neural_weighted_inputs{};
     Neural_Feature_Tuple neural_activation_outputs{};
     
-    foward_propagate(input, 
+    forward_propagate(input, 
         conv_weighted_inputs, 
-        conv_activation_outputs, 
+        pooling_outputs,
         neural_weighted_inputs, 
         neural_activation_outputs);
 
     backward_propagate(output, 
-        conv_weighted_inputs, 
-        conv_activation_outputs, 
+        conv_weighted_inputs,  
+        pooling_outputs,
         neural_weighted_inputs, 
         neural_activation_outputs,
         conv_gradients,

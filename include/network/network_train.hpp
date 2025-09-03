@@ -13,15 +13,19 @@ namespace CNN::Network
 {
 
 template<
-    typename Conv_Layer_Tuple, typename Neural_Layer_Tuple, 
-    typename Conv_Feature_Tuple, typename Neural_Feature_Tuple>
+    typename Conv_Layer_Tuple, 
+    typename Neural_Layer_Tuple, 
+    typename Conv_Feature_Tuple, 
+    typename Pooled_Feature_Tuple, 
+    typename Neural_Feature_Tuple>
 requires(
-    std::tuple_size_v<Conv_Layer_Tuple> == std::tuple_size_v<Conv_Feature_Tuple> - 1 && 
-    std::tuple_size_v<Neural_Layer_Tuple> == std::tuple_size_v<Neural_Feature_Tuple> - 1)
+    std::tuple_size_v<Conv_Layer_Tuple> == std::tuple_size_v<Conv_Feature_Tuple> - 1 
+    && std::tuple_size_v<Neural_Layer_Tuple> == std::tuple_size_v<Neural_Feature_Tuple> - 1
+    && std::tuple_size_v<Conv_Feature_Tuple> == std::tuple_size_v<Pooled_Feature_Tuple>)
 template<typename Optimizer>
 void Network<
     Conv_Layer_Tuple, Neural_Layer_Tuple, 
-    Conv_Feature_Tuple, Neural_Feature_Tuple>::train(
+    Conv_Feature_Tuple, Pooled_Feature_Tuple, Neural_Feature_Tuple>::train(
     const std::vector<std::pair<HeapTensor3D<input_channels, input_height, input_width, input_type>, 
     HeapTensor1D<output_neurons, output_type>>> & dataset_orig, 
     Optimizer optimizer, size_t batch_size, size_t num_epochs)

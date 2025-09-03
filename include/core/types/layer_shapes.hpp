@@ -48,7 +48,7 @@ inline consteval bool output_eq_input_channels() {
 }
 
 template<typename Layer_Tuple, size_t H, size_t... Hs>
-inline consteval auto get_heights(){
+inline consteval auto get_pooled_heights(){
 
     constexpr size_t Id = sizeof...(Hs);
 
@@ -61,12 +61,12 @@ inline consteval auto get_heights(){
                 std::tuple_element_t<Id, Layer_Tuple>::pooling_size - 1) / 
                 std::tuple_element_t<Id, Layer_Tuple>::pooling_size;
 
-        return get_heights<Layer_Tuple, next_H, H, Hs...>();
+        return get_pooled_heights<Layer_Tuple, next_H, H, Hs...>();
     }
 }
 
 template<typename Layer_Tuple, size_t W, size_t... Ws>
-inline consteval auto get_widths(){
+inline consteval auto get_pooled_widths(){
 
     constexpr size_t Id = sizeof...(Ws);
 
@@ -79,15 +79,69 @@ inline consteval auto get_widths(){
                 std::tuple_element_t<Id, Layer_Tuple>::pooling_size - 1) / 
                 std::tuple_element_t<Id, Layer_Tuple>::pooling_size;
 
-        return get_widths<Layer_Tuple, next_W, W, Ws...>();
+        return get_pooled_widths<Layer_Tuple, next_W, W, Ws...>();
+    }
+}
+
+template<typename Layer_Tuple, size_t H, size_t... Hs>
+inline consteval auto get_conv_heights(){
+
+    constexpr size_t Id = sizeof...(Hs);
+
+    if constexpr (Id == std::tuple_size_v<Layer_Tuple>)
+    {
+        return std::array<size_t, Id + 1>{H, Hs...};
+    }
+    else if constexpr (Id == 0) 
+    {
+        constexpr size_t next_H = ((H + std::tuple_element_t<Id, Layer_Tuple>::stride - 1) / 
+                std::tuple_element_t<Id, Layer_Tuple>::stride);
+
+        return get_conv_heights<Layer_Tuple, next_H, H, Hs...>();
+    }
+    else
+    {
+        constexpr size_t next_H = (((H + std::tuple_element_t<Id - 1, Layer_Tuple>::pooling_size - 1) / 
+                std::tuple_element_t<Id - 1, Layer_Tuple>::pooling_size)
+                + std::tuple_element_t<Id, Layer_Tuple>::stride - 1) / 
+                std::tuple_element_t<Id, Layer_Tuple>::stride;
+
+        return get_conv_heights<Layer_Tuple, next_H, H, Hs...>();
+    }
+}
+
+template<typename Layer_Tuple, size_t W, size_t... Ws>
+inline consteval auto get_conv_widths(){
+
+    constexpr size_t Id = sizeof...(Ws);
+
+    if constexpr (Id == std::tuple_size_v<Layer_Tuple>)
+    {
+        return std::array<size_t, Id + 1>{W, Ws...};
+    }
+    else if constexpr (Id == 0)
+    {
+        constexpr size_t next_W = (W + std::tuple_element_t<Id, Layer_Tuple>::stride - 1) / 
+                std::tuple_element_t<Id, Layer_Tuple>::stride;
+
+        return get_conv_widths<Layer_Tuple, next_W, W, Ws...>();
+    }
+    else
+    {
+        constexpr size_t next_W = (((W + std::tuple_element_t<Id - 1, Layer_Tuple>::pooling_size - 1) / 
+                std::tuple_element_t<Id - 1, Layer_Tuple>::pooling_size)
+                + std::tuple_element_t<Id, Layer_Tuple>::stride - 1) / 
+                std::tuple_element_t<Id, Layer_Tuple>::stride;
+
+        return get_conv_widths<Layer_Tuple, next_W, W, Ws...>();
     }
 }
 
 template<size_t C, size_t H, size_t W, typename Layer_Tuple, size_t... Ids>
-inline constexpr auto features_from_layer_helper(std::index_sequence<Ids...>) {
+inline constexpr auto conv_features_from_layer_helper(std::index_sequence<Ids...>) {
 
-    constexpr auto heights = get_heights<Layer_Tuple, H>();
-    constexpr auto widths = get_widths<Layer_Tuple, W>();
+    constexpr auto heights = get_conv_heights<Layer_Tuple, H>();
+    constexpr auto widths = get_conv_widths<Layer_Tuple, W>();
 
     return std::tuple<
         HeapTensor3D<C, H, W>, 
@@ -96,13 +150,31 @@ inline constexpr auto features_from_layer_helper(std::index_sequence<Ids...>) {
 }
 
 template<size_t C, size_t H, size_t W, typename Layer_Tuple>
-inline constexpr auto features_from_layer() {
+inline constexpr auto conv_features_from_layer() {
     constexpr size_t Num_featureMaps = std::tuple_size_v<Layer_Tuple>;
-    return features_from_layer_helper<C, H, W, Layer_Tuple>(std::make_index_sequence<Num_featureMaps>{});
+    return conv_features_from_layer_helper<C, H, W, Layer_Tuple>(std::make_index_sequence<Num_featureMaps>{});
+}
+
+template<size_t C, size_t H, size_t W, typename Layer_Tuple, size_t... Ids>
+inline constexpr auto pooled_features_from_layer_helper(std::index_sequence<Ids...>) {
+
+    constexpr auto heights = get_pooled_heights<Layer_Tuple, H>();
+    constexpr auto widths = get_pooled_widths<Layer_Tuple, W>();
+
+    return std::tuple<
+        HeapTensor3D<C, H, W>, 
+        HeapTensor3D<std::tuple_element_t<Ids, Layer_Tuple>::output_channels, 
+            heights[sizeof...(Ids) - 1 - Ids], widths[sizeof...(Ids) - 1 - Ids]>...>();
+}
+
+template<size_t C, size_t H, size_t W, typename Layer_Tuple>
+inline constexpr auto pooled_features_from_layer() {
+    constexpr size_t Num_featureMaps = std::tuple_size_v<Layer_Tuple>;
+    return pooled_features_from_layer_helper<C, H, W, Layer_Tuple>(std::make_index_sequence<Num_featureMaps>{});
 }
 
 template<typename Layer_Tuple, size_t... Ids>
-inline constexpr auto features_from_layer_helper(std::index_sequence<Ids...>) {
+inline constexpr auto neural_features_from_layer_helper(std::index_sequence<Ids...>) {
 
     static_assert(output_eq_input_neurons<Layer_Tuple>(), "Sizes of output and input neurons do not match"); 
 
@@ -112,9 +184,9 @@ inline constexpr auto features_from_layer_helper(std::index_sequence<Ids...>) {
 }
 
 template<typename Layer_Tuple>
-inline constexpr auto features_from_layer() {
+inline constexpr auto neural_features_from_layer() {
     constexpr size_t Num_featureMaps = std::tuple_size_v<Layer_Tuple>;
-    return features_from_layer_helper<Layer_Tuple>(std::make_index_sequence<Num_featureMaps>{});
+    return neural_features_from_layer_helper<Layer_Tuple>(std::make_index_sequence<Num_featureMaps>{});
 }
 
 template<typename Layer_Tuple,typename Optimizer, size_t... Ids>
