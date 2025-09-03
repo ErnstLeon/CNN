@@ -5,6 +5,17 @@
 !.github/workflows
 !.github/workflows/ci.yml
 
+!data/
+!data/banana.jpg
+!data/tiny-imagenet-200/
+!data/tiny-imagenet-200/test/
+!data/tiny-imagenet-200/test/**
+!data/tiny-imagenet-200/train/
+!data/tiny-imagenet-200/train/**
+!data/tiny-imagenet-200/val/
+!data/tiny-imagenet-200/val/**
+!data/tiny-imagenet-200/*.txt
+
 !include/
 !include/utility/
 !include/network/
