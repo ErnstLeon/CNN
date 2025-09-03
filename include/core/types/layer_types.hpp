@@ -209,57 +209,62 @@ struct Convolution_Layer{
         constexpr size_t input_height = INPUT_Features::size_y;
         constexpr size_t input_width = INPUT_Features::size_z;
 
-        compile_range<output_channels>([&]<size_t oc>{
-            
-            compile_range<output_height>([&]<size_t oh>{
-
-                compile_range<output_width>([&]<size_t ow>{
-
+        UNROLL_PRAGMA
+        for(size_t out_channel = 0; out_channel < output_channels; ++out_channel)
+        {   
+            UNROLL_PRAGMA
+            for(size_t out_h = 0; out_h < output_height; ++out_h)
+            {
+                UNROLL_PRAGMA
+                for(size_t out_w = 0; out_w < output_width; ++out_w)
+                {
                     T sum = 0;
 
-                    compile_range<K>([&]<size_t kernel_h>{
-                    
-                        compile_range<K>([&]<size_t kernel_w>{
-
-                            constexpr int ch = static_cast<int>(oh) +
+                    UNROLL_PRAGMA
+                    for(size_t kernel_h = 0; kernel_h < K; ++kernel_h)
+                    {
+                        UNROLL_PRAGMA
+                        for(size_t kernel_w = 0; kernel_w < K; ++kernel_w)
+                        {
+                            const int ch = static_cast<int>(out_h) +
                                 (static_cast<int>((K - 1) / 2) - static_cast<int>(kernel_h)) ;
-                            constexpr int cw = static_cast<int>(ow) +
+                            const int cw = static_cast<int>(out_w) +
                                 (static_cast<int>((K - 1) / 2) - static_cast<int>(kernel_w));
                             
-                            if constexpr (ch % S == 0 && cw % S == 0 && ch >= 0 && 
+                            if (ch % S == 0 && cw % S == 0 && ch >= 0 && 
                                 cw >= 0 && ch < static_cast<int>(output_height) && 
                                 cw < static_cast<int>(output_width))
                             {
-                                constexpr int sh = ch / static_cast<int>(S);
-                                constexpr int sw = cw / static_cast<int>(S);
+                                const int sh = ch / static_cast<int>(S);
+                                const int sw = cw / static_cast<int>(S);
 
-                                compile_range<input_channels>([&]<size_t ic>{
-
-                                    constexpr size_t kernel_idx = 
-                                        ic * output_channels * K * K +
-                                        oc * K * K +
+                                UNROLL_PRAGMA
+                                for(size_t in_channel = 0; in_channel < input_channels; ++in_channel)
+                                {
+                                    const size_t kernel_idx = 
+                                        in_channel * output_channels * K * K +
+                                        out_channel * K * K +
                                         kernel_h * K + kernel_w;
 
-                                    constexpr size_t input_idx =
-                                        ic * input_height * input_width
+                                    const size_t input_idx =
+                                        in_channel * input_height * input_width
                                         + sh * input_width + sw;
 
                                     sum += input[input_idx] * kernels[kernel_idx];
-                                });
+                                }
                             }
 
-                        });
-                    });
+                        }
+                    }
 
-                    constexpr size_t output_idx =
-                        oc * output_height * output_width +
-                        output_width * oh +
-                        ow;
+                    const size_t output_idx =
+                        out_channel * output_height * output_width +
+                        output_width * out_h + out_w;
 
                     output[output_idx] = sum;
-                });
-            });
-        });
+                }
+            }
+        }
     }
 };
 
