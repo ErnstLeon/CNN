@@ -106,7 +106,7 @@ static std::vector<std::pair<HeapTensor3D<C, H, W, T>, HeapTensor1D<Cat, T>>> lo
 
         HeapTensor3D<C, H, W, T> imag_vec = 
                     img_vec_convert<C, H, W, T>(image_file.path().string());
-        HeapTensor1D<Cat, T> category_vec(category_map.size(), static_cast<T>(0));
+        HeapTensor1D<Cat, T> category_vec(static_cast<T>(0));
 
         category_vec[annotations[image_file.path().filename().string()]] = static_cast<T>(1);
 
