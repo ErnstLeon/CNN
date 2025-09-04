@@ -31,8 +31,8 @@ static std::vector<T> img_vec_convert(const std::string &filename) {
     for (size_t channel = 0; channel < C; ++channel) {
         for (size_t row = 0; row < H; ++row) {
             for (size_t col = 0; col < W; ++col) {
-                T raw_val = static_cast<T>(img.at<cv::Vec3b>(row, col)[channel]);
-                vec[channel * H * W + row * W + col] = raw_val / static_cast<T>(255);
+                T raw_val = static_cast<T>(img.at<cv::Vec3b>(row, col)[channel]) / static_cast<T>(255);
+                vec[channel * H * W + row * W + col] = (raw_val - static_cast<T>(0.5))/ static_cast<T>(0.25);
             }
         }
     }
